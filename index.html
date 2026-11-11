@@ -443,6 +443,12 @@ if(location.protocol.startsWith('http')&&!/^(localhost|127\.)/.test(location.hos
     </div>
   </form>
 </dialog>
+<dialog id="dlgInstall" class="mini">
+  <div class="dh"><h2>Instalar la aplicación</h2><button class="x" data-act="close">×</button></div>
+  <div class="db"><ol id="instSteps" style="margin:4px 0 0;padding-left:20px;line-height:1.6"></ol>
+    <p class="muted" style="font-size:13px;margin:14px 0 0">Los nombres exactos pueden variar un poco según la versión del navegador.</p>
+    <div class="df"><button class="btn primary" data-act="close">Entendido</button></div></div>
+</dialog>
 <input type="file" id="restoreFile" accept=".json" hidden>
 <div id="toast"></div>
 
@@ -577,7 +583,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='13';let swReg=null,checking=false;
+const APP_VERSION='14';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -1192,7 +1198,7 @@ document.addEventListener('click',e=>{
     else if(act==='import'){$('#impText').value='';showPreview([]);$('#dlgImport').showModal()}
     else if(act==='doImport') doImport();
     else if(act==='export') exportData();
-    else if(act==='install'){ if(installEvt){installEvt.prompt();installEvt.userChoice.then(c=>{if(c.outcome==='accepted')$('#bInstall').hidden=true});installEvt=null} }
+    else if(act==='install'){ if(installEvt){installEvt.prompt();installEvt.userChoice.then(c=>{if(c.outcome==='accepted')$('#bInstall').hidden=true});installEvt=null} else showInstallHelp() }
     else if(act==='restore') $('#restoreFile').click();
     else if(act==='close') a.closest('dialog').close();
     else if(act==='toastAct'){const f=toastFn;toastFn=null;$('#toast').classList.remove('on');f&&f()}
@@ -1257,7 +1263,18 @@ document.addEventListener('change',e=>{
 $('#bookBody').addEventListener('input',e=>{const f=e.target.dataset.field;if(f){get(current)[f]=e.target.value;save()}});
 $('#bookBody').addEventListener('keydown',e=>{if(e.target.id==='n_text'&&e.key==='Enter'&&!e.shiftKey){e.preventDefault();saveNote()}});
 let installEvt=null;
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+/* El botón se ve siempre que la app no esté abierta como instalada; si el navegador no ofrece instalar directamente, explica cómo hacerlo */
+if(location.protocol.startsWith('http')&&!isStandalone()) $('#bInstall').hidden=false;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('#bInstall').hidden=false});
+function showInstallHelp(){
+  const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),android=/Android/.test(ua),safari=/Safari/.test(ua)&&!/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+  const steps=ios?(safari?['Pulsa el botón <b>Compartir</b> (el cuadrado con la flecha hacia arriba).','Elige <b>«Añadir a pantalla de inicio»</b>.','Pulsa <b>«Añadir»</b>.']:['Abre esta página en <b>Safari</b>: en iPhone solo se puede instalar desde Safari.','Pulsa <b>Compartir</b> → <b>«Añadir a pantalla de inicio»</b>.'])
+    :android?['Pulsa el menú <b>⋮</b> de Chrome (arriba a la derecha).','Elige <b>«Instalar aplicación»</b> o <b>«Añadir a pantalla de inicio»</b>.']
+    :['Mira a la derecha de la barra de direcciones: si hay un icono de <b>instalar</b> (una pantalla con una flecha), púlsalo.','Si no aparece, abre el menú <b>⋮</b> de Chrome → <b>«Transmitir, guardar y compartir»</b> → <b>«Instalar página como aplicación…»</b>.','Si ya la tienes instalada, búscala en tu menú de aplicaciones.'];
+  $('#instSteps').innerHTML=steps.map(s=>`<li>${s}</li>`).join('');
+  $('#dlgInstall').showModal();
+}
 addEventListener('appinstalled',()=>{track('app_instalada');$('#bInstall').hidden=true;toast('Aplicación instalada 🎉')});
 addEventListener('popstate',()=>{if(hist.length){route=hist.pop();render(true);$('#main').scrollTop=0}});
 load();render(true);
