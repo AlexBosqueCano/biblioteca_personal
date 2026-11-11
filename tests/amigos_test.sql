@@ -2,7 +2,7 @@
 -- Pegar en el editor SQL de Supabase. Crea tres usuarios de prueba (Ana, Beto y Carla), lo comprueba todo
 -- y al final lanza un error a propósito para que NO quede nada guardado. El resultado sale en el mensaje del error.
 -- Resultado esperado:
--- 1)existe:ok noexiste:ok auto:rechazado salientesA=2 tablaDirecta:bloqueada sugNoAmigo:rechazada
+-- 1)existe:ok noexiste:no_account auto:rechazado salientesA=1 tablaDirecta:bloqueada sugNoAmigo:rechazada
 -- 2)B ve entrante de:Ana C acepta ajena:rechazado C ve 0 filas 3)B amigo de:Ana C sugiere:rechazada
 -- 4)A recibe de:Beto cover=[] extra=no msg=¡Te va a encantar! estado=added trasB=added 5)limite:SI amigosTrasEliminar=0
 do $$

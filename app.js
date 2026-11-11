@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='28';let swReg=null,checking=false;
+const APP_VERSION='29';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -670,8 +670,8 @@ function viewFriends(){
   return `<div class="vh"><h1>Amigos<small>${pl(soc.friends.length,'amigo')}</small></h1></div>
   ${cfg.name?'':`<div class="card fadd" style="border-color:color-mix(in srgb,var(--accent) 40%,var(--line))"><b>👋 Pon tu nombre</b><p class="muted" style="margin:4px 0 10px;font-size:14px">Así tus amigos sabrán quién les envía las sugerencias. Si no, verán la primera parte de tu correo.</p><button class="btn small primary" data-nav="profile">Ir a Perfil</button></div>`}
   <div class="card fadd"><b>Añadir un amigo</b><p class="muted" style="margin:4px 0 12px;font-size:14px">Escribe el correo con el que tu amigo usa Mi biblioteca. Cuando acepte, podréis sugeriros libros.</p>
-    <div class="frm"><input type="email" id="f_email" placeholder="correo@ejemplo.com" maxlength="254" autocomplete="off"><button class="btn primary" data-act="friendAdd">Enviar solicitud</button></div>
-    ${soc.msg?`<p class="fmsg">${esc(soc.msg)}</p>`:''}</div>
+    <div class="frm"><input type="email" id="f_email" placeholder="correo@ejemplo.com" maxlength="254" autocomplete="off" value="${esc(soc.draft||'')}"><button class="btn primary" data-act="friendAdd">Enviar solicitud</button></div>
+    ${soc.msg?`<p class="fmsg ${soc.msgOk?'':'warn'}">${soc.msgOk?'✓ ':'⚠️ '}${esc(soc.msg)}</p>`:''}</div>
   ${inc?`<div class="sec"><div class="sech"><h2>Solicitudes recibidas</h2></div><div class="flist">${inc}</div></div>`:''}
   <div class="sec"><div class="sech"><h2>Tus amigos</h2></div>${fr?`<div class="flist">${fr}</div>`:`<div class="dashed">${soc.ok?'Todavía no tienes amigos. Envía una solicitud con su correo.':'Cargando…'}</div>`}</div>
   ${out?`<div class="sec"><div class="sech"><h2>Solicitudes enviadas</h2></div><div class="flist">${out}</div></div>`:''}
@@ -704,8 +704,15 @@ function rpcErr(e){const m=e?.message||String(e);return /Failed to fetch|Network
 async function socAction(act,a){
   const sb=cloud.sb; if(!sb||!cloud.user)return;
   try{
-    if(act==='friendAdd'){const e=($('#f_email')?.value||'').trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e)){soc.msg='Escribe un correo válido.';render();return}
-      const {error}=await sb.rpc('friend_request',{p_email:e});if(error)throw error;soc.msg=`Listo. Si ${e} tiene cuenta en Mi biblioteca, le llegará tu solicitud.`;track('amigo_solicitud');await socLoad(false)}
+    if(act==='friendAdd'){const e=($('#f_email')?.value||'').trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e)){soc.msg='Escribe un correo válido.';soc.msgOk=false;soc.draft=e;render();return}
+      const {data,error}=await sb.rpc('friend_request',{p_email:e});if(error)throw error;
+      soc.msgOk=data==='ok'||data==='friends';
+      soc.msg=data==='ok'?`Solicitud enviada a ${e}. Le aparecerá en la app y, cuando acepte, seréis amigos.`
+        :data==='friends'?`¡Ya sois amigos! (${e} también te había enviado una solicitud)`
+        :data==='pending'?`Ya le habías enviado una solicitud a ${e}. Falta que la acepte.`
+        :data==='no_account'?`No hay ninguna cuenta con el correo ${e}. Revisa que esté bien escrito o pídele que se registre en Mi biblioteca.`:'Hecho.';
+      soc.draft=(data==='ok'||data==='friends')?'':e;
+      track('amigo_solicitud',{resultado:String(data)});await socLoad(false);render()}
     else if(act==='friendYes'||act==='friendNo'){const {error}=await sb.rpc('friend_respond',{p_id:+a.dataset.id,p_accept:act==='friendYes'});if(error)throw error;toast(act==='friendYes'?'¡Ahora sois amigos!':'Solicitud rechazada');await socLoad(false)}
     else if(act==='friendDel'){if(!confirm(a.dataset.out?'¿Cancelar esta solicitud?':`¿Eliminar a ${a.dataset.n||'este amigo'} de tus amigos?`))return;const {error}=await sb.rpc('friend_remove',{p_id:+a.dataset.id});if(error)throw error;await socLoad(false)}
     else if(act==='sugSend'){const ids=[...document.querySelectorAll('input[name=sgf]:checked')].map(i=>i.value);if(!ids.length){toast('Elige al menos un amigo');return}
@@ -716,7 +723,7 @@ async function socAction(act,a){
       if(act==='sugAdd'&&!inLib(x.book)){books.push({id:uid(),added:Date.now(),title:x.book.title,author:x.book.author,genre:x.book.genre,pages:x.book.pages,cover:x.book.cover,status:'want',start:'',end:'',rating:0,summary:'',liked:'',notes:[]});save();toast(`«${x.book.title}» añadido a próximas lecturas`)}
       const st=act==='sugAdd'?'added':'dismissed';const {error}=await sb.rpc('suggestion_update',{p_ids:[x.id],p_status:st});if(error)throw error;
       if(st==='dismissed'){soc.sugs=soc.sugs.filter(y=>y!==x);toast('Sugerencia descartada')}else x.status='added';render()}
-  }catch(e){const m=rpcErr(e);if(act==='friendAdd'){soc.msg=m;render()}else toast(m);if(a)a.disabled=false}
+  }catch(e){const m=rpcErr(e);if(act==='friendAdd'){soc.msg=m;soc.msgOk=false;soc.draft=($('#f_email')?.value||'').trim();render()}else toast(m);if(a)a.disabled=false}
 }
 
 /* ---------- Sugerencias ---------- */
