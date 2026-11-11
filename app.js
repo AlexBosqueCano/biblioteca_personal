@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='30';let swReg=null,checking=false;
+const APP_VERSION='31';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -140,6 +140,7 @@ const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','di
 const MESL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const TRASH='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>';
 const emptyF=()=>({genre:'',author:'',rating:0,year:'',from:'',to:''});
+let fOpen=false,SF={from:'',genre:'',author:'',st:''};
 let books=[],cfg={name:'',theme:'',goals:{},favs:[],lists:[],searches:[]};
 let cat={q:'',state:'idle',items:[],authors:[]},catT,catSeq=0,prevRoute={v:'home'};
 const ONLINE=['home','discover','search','author','work'];
@@ -238,14 +239,18 @@ function filterBar(withStatus){
   const auths=authorsData().sort((a,b)=>a.name.localeCompare(b.name,'es')).map(a=>[a.k,a.name]);
   const years=[...new Set(books.map(b=>rk(b).slice(0,4)).filter(Boolean))].sort().reverse().map(y=>[y,y]);
   const any=Object.values(F).some(Boolean)||q;
-  return `<div class="fbar">${withStatus?`<div class="chips">${[['all','Todos'],['reading','Leyendo'],['read','Leídos'],['want','Próximas'],['fav','♥ Favoritos']].map(([s,t])=>`<button class="chip ${status===s?'on':''}" data-act="status" data-s="${s}">${t}</button>`).join('')}</div>`:''}
+  return fWrap(Object.values(F).filter(Boolean).length,withStatus?`<div class="chips">${[['all','Todos'],['reading','Leyendo'],['read','Leídos'],['want','Próximas'],['fav','♥ Favoritos']].map(([s,t])=>`<button class="chip ${status===s?'on':''}" data-act="status" data-s="${s}">${t}</button>`).join('')}</div>`:'',`<div class="fbar">${withStatus?`<div class="chips">${[['all','Todos'],['reading','Leyendo'],['read','Leídos'],['want','Próximas'],['fav','♥ Favoritos']].map(([s,t])=>`<button class="chip ${status===s?'on':''}" data-act="status" data-s="${s}">${t}</button>`).join('')}</div>`:''}
     ${sel('genre',genres,'Todos','Género')}${sel('author',auths,'Todos','Autor')}
     ${sel('rating',[[5,'★★★★★'],[4,'★★★★ o más'],[3,'★★★ o más'],[2,'★★ o más'],[-1,'Sin valorar']],'Cualquiera','Valoración')}
     ${sel('year',years,'Todos','Año')}
     <label class="fl ${F.from?'act':''}"><span>Desde</span><input type="date" data-f="from" value="${F.from}"></label>
     <label class="fl ${F.to?'act':''}"><span>Hasta</span><input type="date" data-f="to" value="${F.to}"></label>
     <label class="fl"><span>Orden</span><select id="sort">${[['recent','Más recientes'],['oldest','Más antiguos'],['title','Título'],['author','Autor'],['rating','Valoración']].map(([v,t])=>`<option value="${v}" ${sort===v?'selected':''}>${t}</option>`).join('')}</select></label>
-    ${any?'<button class="btn small ghost" data-act="clearF">✕ Limpiar</button>':''}</div>`;
+    ${any?'<button class="btn small ghost" data-act="clearF">✕ Limpiar</button>':''}</div>`);
+}
+/* En el móvil los filtros se pliegan tras un botón «Filtros» (las pestañas de estado siguen a la vista) */
+function fWrap(n,tabs,bar){
+  return `<div class="fwrap ${fOpen?'open':''}"><div class="ftop">${tabs?`<div class="ftabs monly">${tabs}</div>`:''}<button class="ftog monly ${n?'act':''}" data-act="ftog">⚙️ Filtros${n?` <b>${n}</b>`:''} <span>${fOpen?'▴':'▾'}</span></button></div>${bar}</div>`;
 }
 const emptyBox=(icon,title,text,btns='')=>`<div class="empty"><div class="big">${icon}</div><h2>${title}</h2><div>${text}</div>${btns}</div>`;
 
@@ -684,17 +689,26 @@ function viewFriends(){
   ${out?`<div class="sec"><div class="sech"><h2>Solicitudes enviadas</h2></div><div class="flist">${out}</div></div>`:''}
   ${soc.friends.length?'<p class="muted" style="font-size:14px">Para sugerir un libro, abre su ficha y pulsa «🎁 Sugerir a un amigo».</p>':''}`;
 }
+function fSugTile(x,i){const w=regW(x.book),own=inLib(x.book);
+  return `<div class="tile" data-work="${w}" style="--i:${Math.min(i,24)}"><div class="cvw">${cover(x.book)}${x.status==='new'?'<span class="nbadge">Nueva</span>':''}<div class="tact">${own?'':`<button class="ib add" data-act="sugAdd" data-id="${x.id}" title="Quiero leerlo">＋</button>`}<button class="ib" data-act="sugDel" data-id="${x.id}" title="Descartar">✕</button></div></div>
+  <div class="t">${esc(x.book.title)}</div><div class="a">${esc(x.book.author||'')}</div>${x.msg?`<div class="smsg" title="${esc(x.msg)}">💬 ${esc(x.msg)}</div>`:''}
+  ${own?'<div class="tag">✓ En tu biblioteca</div>':`<button class="btn small" style="margin-top:8px" data-act="sugAdd" data-id="${x.id}">＋ Quiero leerlo</button>`}</div>`}
 function viewSugs(){
   if(!cloud.user) return `<div class="vh"><h1>Sugerencias de amigos</h1></div>`+needAccount('recibir sugerencias');
-  const l=soc.sugs;
-  if(!l.length) return `<div class="vh"><h1>Sugerencias de amigos</h1></div>`+emptyBox('🎁','Aún no tienes sugerencias','Cuando un amigo te recomiende un libro aparecerá aquí.','<button class="btn" data-nav="friends">Ver mis amigos</button>');
-  return `<div class="vh"><h1>Sugerencias de amigos<small>${pl(l.length,'libro')}</small></h1></div><div class="sugs">${l.map((x,i)=>{const own=inLib(x.book),w=regW(x.book);
-    return `<div class="card sugc ${x.status==='new'?'nw':''}" style="--i:${Math.min(i,24)}"><div data-work="${w}" class="sugcv">${cover(x.book)}</div><div class="sugi">
-      <div class="from">🎁 <b>${esc(x.from)}</b> te lo recomienda${x.date?` · ${fmt(x.date)}`:''}</div>
-      <h3 data-work="${w}">${esc(x.book.title)}</h3>${x.book.author?`<div class="muted">${esc(x.book.author)}</div>`:''}
-      ${x.msg?`<blockquote>«${esc(x.msg)}»</blockquote>`:''}
-      <div class="acts">${own?'<span class="pill st">En tu biblioteca</span>':`<button class="btn small primary" data-act="sugAdd" data-id="${x.id}">＋ Quiero leerlo</button>`}<button class="btn small" data-work="${w}">Ver ficha</button><button class="btn small ghost" data-act="sugDel" data-id="${x.id}">Descartar</button></div>
-    </div></div>`}).join('')}</div>`;
+  const all=soc.sugs;
+  if(!all.length) return `<div class="vh"><h1>Sugerencias de amigos</h1></div>`+emptyBox('🎁','Aún no tienes sugerencias','Cuando un amigo te recomiende un libro aparecerá aquí.','<button class="btn" data-nav="friends">Ver mis amigos</button>');
+  const nq=norm(q),sel=(k,opts,allL,label)=>`<label class="fl ${SF[k]?'act':''}"><span>${label}</span><select data-sf="${k}"><option value="">${allL}</option>${opts.map(([v,t])=>`<option value="${esc(v)}" ${SF[k]===v?'selected':''}>${esc(t)}</option>`).join('')}</select></label>`;
+  const uniq=f=>[...new Set(all.map(f).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  const list=all.filter(x=>(!SF.from||x.from===SF.from)&&(!SF.genre||x.book.genre===SF.genre)&&(!SF.author||x.book.author===SF.author)
+    &&(!SF.st||(SF.st==='new'?x.status==='new':SF.st==='added'?inLib(x.book)||x.status==='added':!inLib(x.book)))
+    &&(!nq||norm([x.book.title,x.book.author,x.book.genre,x.msg,x.from].join(' ')).includes(nq)));
+  const n=Object.values(SF).filter(Boolean).length,any=n||q;
+  const bar=`<div class="fbar">${sel('from',uniq(x=>x.from).map(v=>[v,v]),'Todos','Amigo')}${sel('st',[['new','Nuevas'],['pending','Aún no en mi biblioteca'],['added','Ya en mi biblioteca']],'Todas','Estado')}${sel('genre',uniq(x=>x.book.genre).map(v=>[v,v]),'Todos','Género')}${sel('author',uniq(x=>x.book.author).map(v=>[v,v]),'Todos','Autor')}${any?'<button class="btn small ghost" data-act="clearSF">✕ Limpiar</button>':''}</div>`;
+  const groups=new Map();for(const x of list){if(!groups.has(x.from))groups.set(x.from,[]);groups.get(x.from).push(x)}
+  const rows=[...groups].map(([from,l])=>{const nw=l.filter(x=>x.status==='new').length;
+    return `<div class="sec"><div class="sech sfh">${avatar(from,'')}<h2>${esc(from)}</h2><span class="libn">${pl(l.length,'libro')}</span>${nw?`<span class="hotp">${pl(nw,'nueva','nuevas')}</span>`:''}</div><div class="hrow">${l.map((x,i)=>fSugTile(x,i)).join('')}</div></div>`}).join('');
+  return `<div class="vh"><h1>Sugerencias de amigos<small>${pl(all.length,'libro')}</small></h1></div>${fWrap(n,'',bar)}`+
+    (rows||emptyBox('🔎','Nada por aquí','Ninguna sugerencia coincide con la búsqueda o los filtros.','<button class="btn" data-act="clearSF">Limpiar filtros</button>'));
 }
 function openSuggest(book){
   if(!cloud.user){openLogin();return}
@@ -973,6 +987,8 @@ document.addEventListener('click',e=>{
     else if(act==='setTheme'){cfg.theme=a.dataset.t==='auto'?'':a.dataset.t;save();render()}
     else if(act==='status'){status=a.dataset.s;render(true)}
     else if(act==='clearF'){F=emptyF();status='all';clearQ();render(true)}
+    else if(act==='clearSF'){SF={from:'',genre:'',author:'',st:''};clearQ();render(true)}
+    else if(act==='ftog'){fOpen=!fOpen;render()}
     else if(act==='fav'){const k=a.dataset.k;cfg.favs=cfg.favs.includes(k)?cfg.favs.filter(x=>x!==k):[...cfg.favs,k];save();render()}
     else if(act==='pickAuthor'){F=emptyF();F.author=a.dataset.k;status='all';clearQ();if($('#dlgBook').open)$('#dlgBook').close();go('lib')}
     else if(act==='pickGenre'){F=emptyF();F.genre=a.dataset.g;status='all';clearQ();if($('#dlgBook').open)$('#dlgBook').close();go('lib')}
@@ -1039,6 +1055,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const t=e.target; if(!t.closest||(!t.closest('#view')&&!t.closest('#bookBody'))) return;
   if(t.dataset.f){F[t.dataset.f]=t.dataset.f==='rating'?+t.value:t.value;render()}
+  else if(t.dataset.sf){SF[t.dataset.sf]=t.value;render()}
   else if(t.id==='sort'){sort=t.value;render()}
   else if(t.id==='statYear'){statYear=t.value;render()}
   else if(t.id==='goalIn'){cfg.goals[curYear()]=Math.max(0,parseInt(t.value)||0);save();render()}
