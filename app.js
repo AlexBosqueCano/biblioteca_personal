@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='29';let swReg=null,checking=false;
+const APP_VERSION='30';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -519,7 +519,7 @@ function viewWork(){
   <div class="bk wk">${cover(d)}<div class="main">
     <h2>${esc(d.title)}</h2><div class="au">${d.author?`<a data-act="openAuthor" data-n="${esc(d.author)}" data-k="${esc(d.akey||'')}">${esc(d.author)}</a>`:'Autor desconocido'}</div>
     <div class="pills">${date?`<span class="pill">📅 ${esc(date)}</span>`:''}${d.pages?`<span class="pill">${d.pages} págs.</span>`:''}${d.genre?`<span class="pill">${esc(d.genre)}</span>`:''}${own?'<span class="pill st">En tu biblioteca</span>':''}</div>
-    <div class="acts">${own?`<button class="btn small primary" data-open="${own.id}">Abrir mi ficha</button>`:`<button class="btn small primary" data-act="addW" data-w="${id}" data-s="want">＋ Quiero leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="reading">Empezar a leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="read">Ya lo he leído</button>`}${cloud.user?`<button class="btn small" data-act="suggestW" data-w="${id}">🎁 Sugerir a un amigo</button>`:''}</div>
+    <div class="acts">${own?`<button class="btn small primary" data-open="${own.id}">Abrir mi ficha</button>`:`<button class="btn small primary" data-act="addW" data-w="${id}" data-s="want">＋ Quiero leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="reading">Empezar a leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="read">Ya lo he leído</button>`}${cloud.user&&own?`<button class="btn small" data-act="suggestOwn" data-id="${own.id}">🎁 Sugerir a un amigo</button>`:''}</div>
     <h4>Resumen</h4><p class="bio" style="margin:0">${c.s==='loading'?'<span class="skel">Buscando información del libro…</span>':w.summary?esc(w.summary)+(w.sumLang!=='es'?' <span class="muted">(en inglés)</span>':'')+(safeUrl(w.wiki)?` <a href="${esc(safeUrl(w.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):'<span class="muted">No se ha encontrado un resumen de este libro.</span>'}</p>
     ${d.author?`<h4>Autor</h4><div style="max-width:520px">${authorCard({name:d.author,key:d.akey||''})}</div>`:''}
   </div></div>${bottom}`;
@@ -631,6 +631,12 @@ function render(anim){
    Todo pasa por funciones del servidor (friend_request, friends_list, suggest_book…), que comprueban permisos.
    Lo que llega de otras personas se muestra siempre escapado (esc) y las portadas pasan por safeUrl. */
 let soc={friends:[],incoming:[],outgoing:[],sugs:[],ok:false,busy:false,msg:'',shown:new Set()},sugTarget=null;
+/* Redibujado en segundo plano: si estás escribiendo o deslizando (sobre todo en iPhone), se espera a que termines.
+   Así la pantalla no se «cuelga» por cambiar el contenido a mitad de un desplazamiento o con el teclado abierto. */
+let rPend=false,rTimer=0,lastAct=0;
+function busyUI(){const a=document.activeElement;return (a&&a!==document.body&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.closest&&a.closest('#main'))||Date.now()-lastAct<700||!!document.querySelector('dialog[open]')}
+function softRender(){ if(busyUI()){rPend=true;clearTimeout(rTimer);rTimer=setTimeout(softRender,800);return} rPend=false; const m=$('#main'),y=m.scrollTop; render(); m.scrollTop=y }
+['touchstart','touchmove','touchend','scroll','wheel'].forEach(ev=>addEventListener(ev,()=>{lastAct=Date.now()},{passive:true,capture:true}));
 function socReset(){soc={friends:[],incoming:[],outgoing:[],sugs:[],ok:false,busy:false,msg:'',shown:new Set()}}
 function cleanSug(x){const b=x&&typeof x.book==='object'&&x.book||{};
   return {id:+x.id||0,from:String(x.from_name||'Un amigo').slice(0,40),msg:String(x.message||'').slice(0,280),status:['new','added','dismissed'].includes(x.status)?x.status:'new',seen:!!x.seen,date:String(x.created_at||'').slice(0,10),
@@ -642,8 +648,9 @@ async function socLoad(panel){
     if(f.error)throw f.error; if(sg.error)throw sg.error;
     const fl=(f.data||[]).map(r=>({id:+r.id,kind:r.kind,uid:r.user_id||'',name:String(r.name||'').slice(0,40),email:String(r.email||'').slice(0,254),since:String(r.since||'').slice(0,10)}));
     soc.friends=fl.filter(r=>r.kind==='friend').sort((a,b)=>a.name.localeCompare(b.name));soc.incoming=fl.filter(r=>r.kind==='incoming');soc.outgoing=fl.filter(r=>r.kind==='outgoing');
-    soc.sugs=(sg.data||[]).map(cleanSug).filter(x=>x.id&&x.book.title);soc.ok=true;
-    if(!$('#dlgBook').open&&!$('#dlgForm').open) render();
+    soc.sugs=(sg.data||[]).map(cleanSug).filter(x=>x.id&&x.book.title);
+    const sig=JSON.stringify([soc.friends,soc.incoming,soc.outgoing,soc.sugs.map(x=>[x.id,x.status])]);
+    if(sig!==soc.sig||!soc.ok){soc.sig=sig;soc.ok=true;softRender()}
     if(panel!==false) showSugPanel();
   }catch(e){ if(navigator.onLine) window.informarError?.(e,'amigos') }
   finally{soc.busy=false}
@@ -691,6 +698,7 @@ function viewSugs(){
 }
 function openSuggest(book){
   if(!cloud.user){openLogin();return}
+  if(!inLib(book)){toast('Solo puedes sugerir libros que tengas en tu biblioteca');return}
   sugTarget={title:book.title,author:book.author||'',cover:book.cover||'',key:book.key||'',akey:book.akey||'',year:String(book.year||''),pages:String(book.pages||''),genre:book.genre||''};
   const fr=soc.friends;
   $('#suggestBody').innerHTML=`<div class="sgb">${cover(sugTarget)}<div><b>${esc(sugTarget.title)}</b><div class="muted">${esc(sugTarget.author)}</div></div></div>`+
@@ -957,7 +965,7 @@ document.addEventListener('click',e=>{
     else if(act==='close') a.closest('dialog').close();
     else if(['friendAdd','friendYes','friendNo','friendDel','sugSend','sugAdd','sugDel'].includes(act)) socAction(act,a);
     else if(act==='suggestCur'){const b=get(current);if(b){$('#dlgBook').close();openSuggest(b)}}
-    else if(act==='suggestW'){const it=REG[+a.dataset.w];if(it)openSuggest(it)}
+    else if(act==='suggestOwn'){const b=get(a.dataset.id);if(b)openSuggest(b)}
     else if(act==='sugGo'){$('#dlgSug').close();go('sugs')}
     else if(act==='goFriends'){$('#dlgSuggest').close();go('friends')}
     else if(act==='toastAct'){const f=toastFn;toastFn=null;$('#toast').classList.remove('on');f&&f()}
@@ -1157,7 +1165,7 @@ async function cloudSync(manual){
     setMeta(m);
     cloud.state='ok';cloud.last=Date.now();cloud.err='';
     socLoad();
-    if(changedLocal){ render(); if($('#dlgBook').open) renderBook() }
+    if(changedLocal){ if($('#dlgBook').open){render();renderBook()} else softRender() }
     if(manual===true&&route.v==='profile') toast('Biblioteca sincronizada');
   }catch(e){
     cloud.state=navigator.onLine?'err':'offline';cloud.err=e?.message||String(e);

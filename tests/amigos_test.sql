@@ -3,7 +3,7 @@
 -- y al final lanza un error a propósito para que NO quede nada guardado. El resultado sale en el mensaje del error.
 -- Resultado esperado:
 -- 1)existe:ok noexiste:no_account auto:rechazado salientesA=1 tablaDirecta:bloqueada sugNoAmigo:rechazada
--- 2)B ve entrante de:Ana C acepta ajena:rechazado C ve 0 filas 3)B amigo de:Ana C sugiere:rechazada
+-- 2)B ve entrante de:Ana C acepta ajena:rechazado C ve 0 filas 3)B amigo de:Ana noEnBiblio:rechazada C sugiere:rechazada
 -- 4)A recibe de:Beto cover=[] extra=no msg=¡Te va a encantar! estado=added trasB=added 5)limite:SI amigosTrasEliminar=0
 do $$
 declare a uuid:='aaaaaaaa-0000-0000-0000-000000000001'; b uuid:='bbbbbbbb-0000-0000-0000-000000000002'; c uuid:='cccccccc-0000-0000-0000-000000000003';
@@ -26,6 +26,8 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub',b,'role','authenticated','aal','aal1')::text, true);
   perform public.friend_respond(rid,true);
   select name into t from public.friends_list() where kind='friend'; out:=out||' 3)B amigo de:'||coalesce(t,'?');
+  insert into public.books(id,data) values ('m1','{"title":"<img src=x onerror=alert(1)>"}'),('m2','{"title":"L"}');
+  begin perform public.suggest_book(a,'{"title":"Libro que no tengo"}',''); out:=out||' noEnBiblio:ACEPTADA'; exception when others then out:=out||' noEnBiblio:rechazada'; end;
   perform public.suggest_book(a,'{"title":"<img src=x onerror=alert(1)>","author":"Autora","cover":"javascript:alert(1)","key":"/works/OL1W","extra":"x"}','¡Te va a encantar!');
   perform set_config('request.jwt.claims', json_build_object('sub',c,'role','authenticated','aal','aal1')::text, true);
   begin perform public.suggest_book(a,'{"title":"Spam"}',''); out:=out||' C sugiere:ACEPTADA'; exception when others then out:=out||' C sugiere:rechazada'; end;
