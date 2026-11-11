@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Privacidad · Mi biblioteca</title>
+<title>Política de privacidad · Mi biblioteca</title>
 <meta name="theme-color" content="#5b5bd6">
 <link rel="icon" href="icon-192.png">
 <style>
@@ -11,16 +11,20 @@
 @media (prefers-color-scheme:dark){:root{--bg:#0e1016;--card:#191c27;--ink:#eceef5;--muted:#8c93a6;--line:#262a38;--accent:#8f90ff}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:780px;margin:0 auto;padding:40px 22px 80px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 30px}
+main{max-width:820px;margin:0 auto;padding:40px 22px 80px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 32px}
 h1{font-size:32px;margin:0 0 4px;letter-spacing:-.5px}
-h2{font-size:20px;margin:30px 0 8px}
+h2{font-size:20px;margin:34px 0 8px;padding-top:4px}
+h3{font-size:16px;margin:18px 0 4px}
 a{color:var(--accent)}
 .muted{color:var(--muted)}
 table{width:100%;border-collapse:collapse;font-size:15px;margin:8px 0}
 td,th{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
 th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
 .back{display:inline-block;margin-bottom:18px;font-weight:600;text-decoration:none}
+.box{background:color-mix(in srgb,var(--accent) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));border-radius:14px;padding:14px 18px;margin:14px 0}
+nav.toc ol{margin:6px 0 0;padding-left:22px;columns:2 260px}
+@media (max-width:600px){.card{padding:22px 18px}table{font-size:14px}}
 </style>
 </head>
 <body>
@@ -30,53 +34,108 @@ th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;le
 <h1>Política de privacidad</h1>
 <p class="muted">Última actualización: 11 de noviembre de 2026</p>
 
-<p>Mi biblioteca es una aplicación gratuita para llevar el registro de tus lecturas. Esta página explica qué datos se usan, para qué y qué puedes hacer con ellos. La idea es sencilla: <b>tus libros son tuyos</b>, la app solo los guarda para que puedas usarlos.</p>
+<div class="box"><b>En resumen:</b> puedes usar Mi biblioteca sin registrarte y entonces tus datos no salen de tu dispositivo. Si creas una cuenta, guardamos tu correo y tu biblioteca para sincronizarla entre tus dispositivos, en servidores de la Unión Europea. Solo contamos visitas de forma anónima si nos das permiso. No vendemos ni cedemos tus datos, no hay publicidad y puedes borrar tu cuenta en cualquier momento desde la app.</div>
 
-<h2>Quién es el responsable</h2>
-<p>La aplicación la desarrolla y mantiene Alex Bosque Cano como proyecto personal. Para cualquier consulta sobre tus datos puedes escribir a través del <a href="https://github.com/AlexBosqueCano/biblioteca_personal/issues" target="_blank" rel="noopener">repositorio del proyecto en GitHub</a>.</p>
+<nav class="toc"><b>Índice</b><ol>
+<li><a href="#responsable">Responsable del tratamiento</a></li>
+<li><a href="#datos">Qué datos tratamos</a></li>
+<li><a href="#finalidades">Para qué y con qué base legal</a></li>
+<li><a href="#conservacion">Cuánto tiempo los conservamos</a></li>
+<li><a href="#destinatarios">Proveedores y destinatarios</a></li>
+<li><a href="#transferencias">Transferencias internacionales</a></li>
+<li><a href="#almacenamiento">Almacenamiento en tu dispositivo y cookies</a></li>
+<li><a href="#derechos">Tus derechos</a></li>
+<li><a href="#seguridad">Seguridad</a></li>
+<li><a href="#menores">Menores de edad</a></li>
+<li><a href="#cambios">Cambios en esta política</a></li>
+</ol></nav>
 
-<h2>Si usas la app sin cuenta</h2>
-<p>Todo lo que apuntas (libros, notas, citas, listas, reto anual) se guarda <b>solo en tu dispositivo</b>, en el almacenamiento del navegador. No se envía a ningún servidor nuestro. Si borras los datos del navegador o desinstalas la app, se pierde, salvo que hayas guardado una copia de seguridad desde «Perfil».</p>
-
-<h2>Si creas una cuenta (opcional)</h2>
+<h2 id="responsable">1. Responsable del tratamiento</h2>
 <table>
-<tr><th>Qué datos</th><th>Para qué</th></tr>
-<tr><td>Tu correo electrónico y, si entras con Google, tu nombre y foto de perfil de Google</td><td>Identificarte e iniciar sesión</td></tr>
-<tr><td>Tu biblioteca: libros, notas, citas, valoraciones, listas, reto y ajustes</td><td>Guardarla en la nube y sincronizarla entre tus dispositivos</td></tr>
+<tr><td style="width:38%"><b>Responsable</b></td><td>Alex Bosque Cano, como desarrollador de Mi biblioteca (proyecto personal, sin ánimo de lucro)</td></tr>
+<tr><td><b>Correo de contacto</b></td><td><a href="mailto:alexbosquecano@gmail.com">alexbosquecano@gmail.com</a></td></tr>
+<tr><td><b>Aplicación</b></td><td><a href="https://biblioteca-personal.alexbosquecano.workers.dev">biblioteca-personal.alexbosquecano.workers.dev</a></td></tr>
 </table>
-<p>La base legal es la prestación del servicio que pides al crear la cuenta. Los datos se guardan en <b>Supabase</b>, en servidores de la Unión Europea (Irlanda), protegidos para que cada usuario solo pueda acceder a lo suyo. Se conservan mientras tengas la cuenta.</p>
+<p>Esta política se aplica conforme al Reglamento General de Protección de Datos de la UE (RGPD) y a la Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).</p>
 
-<h2>Estadísticas de uso (solo si las aceptas)</h2>
-<p>Si das tu permiso, la app envía estadísticas anónimas a <b>PostHog</b> (servidores en la Unión Europea): visitas, tipo de dispositivo, país aproximado y acciones generales como «se ha añadido un libro» o «se ha instalado la app». <b>Nunca se envían títulos, notas ni el contenido de tu biblioteca</b>, y la dirección IP se anonimiza. Sirven solo para saber cuánta gente usa la app y mejorarla. La base legal es tu consentimiento, que puedes retirar en cualquier momento desde «Perfil».</p>
-
-<h2>Servicios externos que usa la app</h2>
+<h2 id="datos">2. Qué datos tratamos</h2>
+<h3>Si usas la app sin cuenta</h3>
+<p>Todo lo que apuntas (libros, notas, citas, valoraciones, listas, reto anual, nombre y preferencias) se guarda <b>únicamente en tu dispositivo</b>, en el almacenamiento del navegador. No lo recibimos ni podemos verlo.</p>
+<h3>Si creas una cuenta (opcional)</h3>
 <table>
-<tr><th>Servicio</th><th>Para qué</th></tr>
-<tr><td>Cloudflare</td><td>Alojar la aplicación</td></tr>
-<tr><td>Open Library, Wikipedia y Wikidata</td><td>Buscar libros, portadas, biografías y resúmenes. Cuando buscas, el texto de la búsqueda se envía a estos servicios.</td></tr>
-<tr><td>jsDelivr</td><td>Cargar la librería de inicio de sesión (solo si usas cuenta)</td></tr>
-<tr><td>Google</td><td>Iniciar sesión, solo si eliges «Continuar con Google»</td></tr>
+<tr><th>Categoría</th><th>Datos</th></tr>
+<tr><td>Identificación</td><td>Correo electrónico. Si entras con Google: además nombre y foto de perfil que Google comparte.</td></tr>
+<tr><td>Contenido de tu biblioteca</td><td>Libros, notas, citas, valoraciones, resúmenes, listas, favoritos, reto anual, nombre visible y búsquedas recientes.</td></tr>
+<tr><td>Seguridad</td><td>Si activas la verificación en dos pasos, el identificador del método configurado (nunca los códigos). Datos técnicos de la sesión: fecha de acceso, dirección IP y tipo de navegador, registrados por el proveedor de autenticación.</td></tr>
 </table>
-<p>Estos servicios reciben, como cualquier web que visitas, datos técnicos como tu dirección IP, y aplican sus propias políticas de privacidad.</p>
+<h3>Estadísticas de uso (solo con tu consentimiento)</h3>
+<p>Páginas vistas, secciones visitadas, acciones generales (por ejemplo «se ha añadido un libro» o «se ha instalado la app»), tipo de dispositivo y navegador, y país aproximado. La dirección IP se anonimiza. <b>Nunca</b> se envían títulos, notas ni el contenido de tu biblioteca.</p>
+<h3>Búsquedas en catálogos públicos</h3>
+<p>Cuando buscas un libro o abres la ficha de un autor, el texto de la búsqueda se envía a catálogos públicos (Open Library, Wikipedia y Wikidata) para obtener la información. No se envía ningún dato de tu cuenta.</p>
+<p>No tratamos categorías especiales de datos ni tomamos decisiones automatizadas ni elaboramos perfiles con efectos sobre ti.</p>
 
-<h2>Almacenamiento en tu dispositivo</h2>
-<p>La app usa el almacenamiento local del navegador para guardar tu biblioteca, tus preferencias (tema, consentimiento) y, si tienes cuenta, la sesión iniciada. Es imprescindible para que la app funcione. Las estadísticas solo usan almacenamiento si las aceptas. No hay publicidad ni cookies publicitarias.</p>
+<h2 id="finalidades">3. Para qué y con qué base legal</h2>
+<table>
+<tr><th>Finalidad</th><th>Base legal (RGPD)</th></tr>
+<tr><td>Crear y gestionar tu cuenta, iniciar sesión y verificar tu identidad</td><td>Ejecución del servicio que solicitas al registrarte (art. 6.1.b)</td></tr>
+<tr><td>Guardar tu biblioteca en la nube y sincronizarla entre dispositivos</td><td>Ejecución del servicio (art. 6.1.b)</td></tr>
+<tr><td>Proteger la app y las cuentas frente a accesos indebidos y abusos</td><td>Interés legítimo en mantener un servicio seguro (art. 6.1.f)</td></tr>
+<tr><td>Estadísticas anónimas de uso para mejorar la app</td><td>Tu consentimiento (art. 6.1.a), que puedes retirar en cualquier momento</td></tr>
+<tr><td>Responder a tus consultas y solicitudes</td><td>Tu solicitud y nuestra obligación legal de atender tus derechos (art. 6.1.b y 6.1.c)</td></tr>
+</table>
+<p>No usamos tus datos para publicidad ni los vendemos o cedemos a terceros con fines comerciales.</p>
 
-<h2>Tus derechos</h2>
-<p>Puedes ejercerlos directamente desde la app:</p>
+<h2 id="conservacion">4. Cuánto tiempo los conservamos</h2>
 <ul>
-<li><b>Acceder y llevarte tus datos:</b> «Perfil» → «Guardar copia de seguridad».</li>
-<li><b>Corregirlos:</b> edita cualquier libro o ajuste.</li>
-<li><b>Borrarlos:</b> «Perfil» → «Borrar mi cuenta» elimina tu cuenta y toda tu biblioteca de la nube.</li>
+<li><b>Cuenta y biblioteca:</b> mientras mantengas la cuenta. Al borrarla desde «Perfil» → «Borrar mi cuenta», se eliminan de inmediato la cuenta y toda tu biblioteca de nuestra base de datos.</li>
+<li><b>Datos técnicos de sesión:</b> el tiempo que conserve el proveedor de autenticación sus registros de seguridad.</li>
+<li><b>Estadísticas:</b> el tiempo necesario para analizar el uso de la app, según la configuración del proveedor de analítica. Si retiras el consentimiento, se deja de recoger información desde ese momento.</li>
+<li><b>Consultas por correo:</b> el tiempo necesario para atenderlas y, después, durante los plazos legales de prescripción.</li>
+</ul>
+
+<h2 id="destinatarios">5. Proveedores y destinatarios</h2>
+<p>Para prestar el servicio nos apoyamos en estos proveedores, que actúan como encargados del tratamiento o, en el caso de los catálogos públicos y Google, como responsables independientes:</p>
+<table>
+<tr><th>Proveedor</th><th>Para qué</th><th>Ubicación de los datos</th></tr>
+<tr><td>Supabase</td><td>Base de datos y autenticación de las cuentas</td><td>Unión Europea (Irlanda)</td></tr>
+<tr><td>Cloudflare</td><td>Alojamiento y entrega de la aplicación</td><td>Red global</td></tr>
+<tr><td>PostHog</td><td>Estadísticas de uso, solo con consentimiento</td><td>Unión Europea</td></tr>
+<tr><td>Google</td><td>Inicio de sesión, solo si eliges «Continuar con Google»</td><td>Según la política de Google</td></tr>
+<tr><td>jsDelivr</td><td>Entrega de la librería de inicio de sesión</td><td>Red global</td></tr>
+<tr><td>Open Library (Internet Archive), Wikipedia y Wikidata (Wikimedia Foundation)</td><td>Información y portadas de libros y autores</td><td>Estados Unidos</td></tr>
+</table>
+<p>Como ocurre al visitar cualquier web, estos servicios reciben datos técnicos como tu dirección IP y aplican sus propias políticas de privacidad. No comunicamos tus datos a nadie más, salvo obligación legal.</p>
+
+<h2 id="transferencias">6. Transferencias internacionales</h2>
+<p>Los datos de tu cuenta y tu biblioteca se alojan en la Unión Europea. Algunos proveedores son empresas con sede en Estados Unidos o tienen infraestructura fuera del Espacio Económico Europeo; en esos casos, las transferencias se amparan en las garantías previstas en el RGPD, como el Marco de Privacidad de Datos UE-EE. UU. o las cláusulas contractuales tipo de la Comisión Europea, según indica cada proveedor.</p>
+
+<h2 id="almacenamiento">7. Almacenamiento en tu dispositivo y cookies</h2>
+<table>
+<tr><th>Qué se guarda</th><th>Tipo</th><th>¿Necesita permiso?</th></tr>
+<tr><td>Tu biblioteca, preferencias (tema, consentimiento) y copia para usar la app sin conexión</td><td>Técnico, imprescindible</td><td>No</td></tr>
+<tr><td>Sesión iniciada (si tienes cuenta)</td><td>Técnico, imprescindible</td><td>No</td></tr>
+<tr><td>Identificador anónimo de estadísticas</td><td>Analítico</td><td>Sí, solo si aceptas</td></tr>
+</table>
+<p>No usamos cookies publicitarias ni de terceros con fines de seguimiento. Puedes cambiar tu decisión sobre las estadísticas en cualquier momento en «Perfil» → «Compartir estadísticas de uso anónimas».</p>
+
+<h2 id="derechos">8. Tus derechos</h2>
+<p>Puedes ejercer en cualquier momento tus derechos de <b>acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad</b>, así como <b>retirar tu consentimiento</b> sin que ello afecte a la licitud del tratamiento anterior. Muchos de ellos los tienes directamente en la app:</p>
+<ul>
+<li><b>Acceso y portabilidad:</b> «Perfil» → «Guardar copia de seguridad» descarga toda tu biblioteca en un archivo.</li>
+<li><b>Rectificación:</b> edita cualquier libro, nota o ajuste.</li>
+<li><b>Supresión:</b> «Perfil» → «Borrar mi cuenta».</li>
 <li><b>Retirar el consentimiento de las estadísticas:</b> desmarca la casilla en «Perfil».</li>
 </ul>
-<p>Para cualquier otra petición, escríbenos por el canal indicado arriba. Si crees que no se han respetado tus derechos, puedes reclamar ante la <a href="https://www.aepd.es" target="_blank" rel="noopener">Agencia Española de Protección de Datos</a>.</p>
+<p>Para cualquier otra solicitud, escribe a <a href="mailto:alexbosquecano@gmail.com">alexbosquecano@gmail.com</a> indicando qué derecho quieres ejercer y el correo de tu cuenta. Responderemos en el plazo máximo de un mes. Si consideras que no se han respetado tus derechos, puedes presentar una reclamación ante la <a href="https://www.aepd.es" target="_blank" rel="noopener">Agencia Española de Protección de Datos</a>.</p>
 
-<h2>Menores</h2>
-<p>La cuenta está pensada para mayores de 14 años. Si eres menor de esa edad, usa la app sin cuenta o con ayuda de tu padre, madre o tutor.</p>
+<h2 id="seguridad">9. Seguridad</h2>
+<p>Aplicamos medidas técnicas para proteger tus datos: conexiones cifradas (HTTPS), aislamiento de los datos de cada usuario en la base de datos, verificación en dos pasos opcional, inicio de sesión sin contraseñas, políticas de seguridad del navegador contra la inyección de código y comprobación de la integridad de las librerías externas. Ningún sistema es completamente infalible; si detectamos un incidente que afecte a tus datos, te informaremos según exige la normativa.</p>
 
-<h2>Cambios</h2>
-<p>Si esta política cambia de forma importante, se avisará dentro de la app.</p>
+<h2 id="menores">10. Menores de edad</h2>
+<p>Para crear una cuenta hay que tener al menos 14 años, la edad mínima de consentimiento en España según la LOPDGDD. Los menores de esa edad pueden usar la app sin cuenta, o con la autorización de su padre, madre o tutor. Si sabemos que hay una cuenta de un menor de 14 años sin esa autorización, la eliminaremos.</p>
+
+<h2 id="cambios">11. Cambios en esta política</h2>
+<p>Podemos actualizar esta política para reflejar cambios en la app o en la normativa. Indicaremos la fecha de la última actualización arriba y, si los cambios son importantes, lo avisaremos dentro de la app.</p>
 </div>
 </main>
 </body>
