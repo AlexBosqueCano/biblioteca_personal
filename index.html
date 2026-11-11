@@ -265,11 +265,27 @@ textarea{resize:vertical;min-height:76px;line-height:1.45}
 #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,24px);background:var(--ink);color:var(--bg);padding:11px 20px;border-radius:99px;font-size:14px;opacity:0;pointer-events:none;transition:.28s cubic-bezier(.2,.9,.3,1.2);z-index:99;max-width:90vw;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow)}
 #toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 #toast button{border:none;background:none;color:var(--accent2);font-weight:700;padding:0}
+.monly{display:none!important}
+.burger{border:1px solid var(--line);background:var(--card);width:42px;height:42px;border-radius:12px;font-size:20px;line-height:1;flex:none}
+.mtab{border:none;background:none;padding:9px 12px;border-radius:10px;font-weight:600;color:var(--muted)}
+.mtab.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+#scrim{display:none}
 @media (max-width:900px){
-  body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-  aside{flex-direction:row;align-items:center;overflow-x:auto;padding:8px;border-right:none;border-bottom:1px solid var(--line)}
-  aside nav{flex-direction:row}.navi{white-space:nowrap;width:auto}.logo b,.navh span,aside .sp{display:none}.logo{padding:0 6px}.navh{padding:0 6px}
-  .top{padding:12px 16px;flex-wrap:wrap}.view{padding:6px 16px 60px}
+  body{grid-template-columns:1fr}
+  aside{position:fixed;top:0;bottom:0;left:0;width:min(300px,84vw);z-index:40;transform:translateX(-105%);transition:transform .25s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 60px rgba(0,0,0,.4)}
+  body.menu aside{transform:none}
+  body.menu #scrim{display:block;position:fixed;inset:0;background:rgba(8,10,18,.55);z-index:39}
+  .monly{display:inline-block!important}.navi.monly{display:flex!important}.donly{display:none}
+  .top{padding:10px 14px;flex-wrap:wrap;gap:6px}
+  .top .sp,.top .btn:not(.primary){display:none}
+  .top .btn.primary{margin-left:auto;padding:9px 14px}
+  .search{order:3;flex:1 1 100%;max-width:none}
+  .view{padding:6px 14px 60px}
+  .vh h1{font-size:27px}.hello{padding:22px}.hello h1{font-size:26px}.hk{gap:18px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:24px 16px}
+  .hrow{grid-auto-columns:128px;gap:16px}
+  .goalc{gap:14px}.noteform{flex-wrap:wrap}.noteform textarea{flex:1 1 100%;order:3}
+  .row{flex-wrap:wrap}.db{padding:16px 18px 22px}.dh{padding:18px 18px 0}
   .hero{grid-template-columns:1fr}.reading{grid-template-columns:1fr}
   .bk{flex-direction:column}.bk .cover{width:120px}.note .na{opacity:1}
 }
@@ -281,18 +297,25 @@ textarea{resize:vertical;min-height:76px;line-height:1.45}
   <nav id="nav"></nav>
   <div class="navh"><span>Listas</span><button data-act="newList" title="Nueva lista">＋</button></div>
   <nav id="navLists"></nav>
+  <div class="navh monly"><span>Acciones</span></div>
+  <button class="navi monly" data-act="random"><i>🎲</i><span>¿Qué leo ahora?</span></button>
+  <button class="navi monly" data-act="import"><i>⬆️</i><span>Importar lista</span></button>
   <div class="sp"></div>
   <button class="navi on" data-act="install" id="bInstall" hidden><i>⬇️</i><span>Instalar aplicación</span></button>
   <button class="navi" data-act="theme" id="bTheme"></button>
 </aside>
+<div id="scrim"></div>
 
 <main id="main">
   <div class="top">
+    <button class="burger monly" data-act="menu" aria-label="Menú">☰</button>
+    <button class="mtab monly" data-nav="home" id="mHome">Inicio</button>
+    <button class="mtab monly" data-nav="lib" id="mLib">Biblioteca</button>
     <div class="search"><span>🔍</span><input id="q" type="text" placeholder="Buscar por título, autor, género o dentro de tus notas…" autocomplete="off"><div id="qs" class="pop" hidden></div></div>
     <span class="sp"></span>
     <button class="btn" data-act="random">🎲 ¿Qué leo ahora?</button>
     <button class="btn" data-act="import">Importar</button>
-    <button class="btn primary" data-act="add">＋ Añadir libro</button>
+    <button class="btn primary" data-act="add">＋ Añadir<span class="donly"> libro</span></button>
   </div>
   <div class="view" id="view"></div>
 </main>
@@ -767,6 +790,7 @@ function render(anim){
   const li=(id,i,l)=>`<button class="navi ${route.v==='list'&&route.id===id?'on':''}" data-nav="list" data-id="${id}"><i>${i}</i><span>${esc(l)}</span><em>${listBooks(id).length||''}</em></button>`;
   $('#navLists').innerHTML=li('want','🔖','Próximas lecturas')+li('reread','↻','Para releer')+cfg.lists.map(l=>li(l.id,'📁',l.name)).join('');
   $('#q').placeholder=ONLINE.includes(route.v)?'Buscar cualquier libro (título, autor…) para añadirlo a tu biblioteca':'Buscar en tu biblioteca por título, autor, género o dentro de tus notas…';
+  $('#mHome').classList.toggle('on',route.v==='home');$('#mLib').classList.toggle('on',route.v==='lib');
   const v=$('#view');
   v.innerHTML=VIEWS[route.v]();
   if(anim){v.classList.remove('anim');void v.offsetWidth;v.classList.add('anim')}
@@ -986,10 +1010,12 @@ function clearQ(){q='';$('#q').value='';$('#qs').hidden=true}
 
 /* ---------- Eventos ---------- */
 document.addEventListener('click',e=>{
+  if(e.target.id==='scrim'||e.target.closest('aside .navi')) document.body.classList.remove('menu');
   const a=e.target.closest('[data-act]');
   if(a){
     const act=a.dataset.act,b=get(current);
-    if(act==='add') openForm();
+    if(act==='menu') document.body.classList.toggle('menu');
+    else if(act==='add') openForm();
     else if(act==='addWant') openForm(null,'want');
     else if(act==='import'){$('#impText').value='';showPreview([]);$('#dlgImport').showModal()}
     else if(act==='doImport') doImport();
