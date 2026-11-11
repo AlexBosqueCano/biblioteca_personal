@@ -61,6 +61,17 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .libh h2{font-size:24px}
 .libi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);font-size:20px}
 .libn{background:var(--soft);color:var(--muted);border-radius:99px;padding:2px 11px;font-size:14px;font-weight:600}
+.goalbig{margin:8px 0 4px;font-size:18px}.goalbig b{font-size:30px;letter-spacing:-.5px}
+.goallink{display:inline-block;margin-top:10px;color:var(--accent);font-weight:600;font-size:14px;cursor:pointer}
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-size:22px;line-height:1;color:var(--ink);transition:.15s}
+.stepper button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.stepper button:active:not(:disabled){transform:scale(.92)}
+.stepper button:disabled{opacity:.35;cursor:default}
+.stepper .sv{min-width:56px;text-align:center;font-size:34px;font-weight:700;letter-spacing:-1px}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.presets .chip{padding:5px 12px;font-size:13px}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 [hidden]{display:none!important}
 
 /* ---------- Barra lateral ---------- */
@@ -588,7 +599,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='15';let swReg=null,checking=false;
+const APP_VERSION='16';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -680,12 +691,17 @@ function filterBar(withStatus){
 const emptyBox=(icon,title,text,btns='')=>`<div class="empty"><div class="big">${icon}</div><h2>${title}</h2><div>${text}</div>${btns}</div>`;
 
 /* ---------- Vistas ---------- */
-function goalCard(){
+function goalCard(edit){
   const yr=curYear(),n=books.filter(b=>b.status==='read'&&(b.end||'').startsWith(yr)).length,g=+cfg.goals[yr]||0;
   const pct=g?Math.min(100,Math.round(n/g*100)):0,C=2*Math.PI*48;
-  return `<div class="card goalc"><div class="ring"><svg width="118" height="118"><circle cx="59" cy="59" r="48"/><circle class="p" cx="59" cy="59" r="48" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct/100)}"/></svg><div>${g?pct+'%':'🎯'}</div></div>
-    <div><h3>Reto ${yr}</h3><p style="margin:8px 0 6px">${n} de <input type="number" id="goalIn" min="1" value="${g||''}" placeholder="¿?"> libros</p>
-    <span class="muted" style="font-size:14px">${!g?'Escribe cuántos libros quieres leer este año.':n>=g?'¡Reto conseguido! 🎉':`Te faltan ${g-n}. ¡Vas bien!`}</span></div></div>`;
+  const ring=`<div class="ring"><svg width="118" height="118"><circle cx="59" cy="59" r="48"/><circle class="p" cx="59" cy="59" r="48" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct/100)}"/></svg><div>${g?pct+'%':'🎯'}</div></div>`;
+  const msg=!g?'Aún no tienes un reto para este año.':n>=g?'¡Reto conseguido! 🎉':`Te ${g-n===1?'falta 1 libro':`faltan ${g-n} libros`}. ¡Vas bien!`;
+  if(!edit) return `<div class="card goalc">${ring}<div style="flex:1"><h3>Reto ${yr}</h3>
+    <p class="goalbig">${g?`<b>${n}</b> de ${g} libros`:`<b>${n}</b> ${n===1?'libro leído':'libros leídos'}`}</p>
+    <span class="muted" style="font-size:14px">${msg}</span><div><a class="goallink" data-nav="profile">${g?'Cambiar objetivo':'Ponerme un reto'} →</a></div></div></div>`;
+  return `<div class="card goalc">${ring}<div style="flex:1"><h3>Reto ${yr}</h3><p class="muted" style="margin:4px 0 12px;font-size:14px">${n} ${n===1?'libro leído':'libros leídos'} este año · ${msg}</p>
+    <div class="stepper"><button data-act="goalStep" data-d="-1" aria-label="Uno menos" ${g<=0?'disabled':''}>−</button><span class="sv">${g||'—'}</span><button data-act="goalStep" data-d="1" aria-label="Uno más">+</button><span class="muted" style="font-size:14px">libros</span></div>
+    <div class="presets">${[6,12,24,36,52].map(v=>`<button class="chip ${g===v?'on':''}" data-act="goalSet" data-v="${v}">${v}</button>`).join('')}${g?'<button class="chip dash" data-act="goalSet" data-v="0">Quitar reto</button>':''}</div></div></div>`;
 }
 function readingCard(b){
   const pct=b.pages&&b.current?Math.min(100,Math.round(b.current/b.pages*100)):0;
@@ -962,7 +978,7 @@ function viewProfile(){
     <div style="flex:1;min-width:240px"><input class="name" id="pName" value="${esc(cfg.name)}" placeholder="Escribe tu nombre" maxlength="40">
       <div class="muted">${pl(books.length,'libro')} en la biblioteca · ${read.length} ${read.length===1?'leído':'leídos'}${first?' · registrando desde '+first:''}</div></div>
     <div><div class="muted" style="font-size:13px;margin-bottom:6px">Tema</div><div class="seg">${[['light','☀️ Claro'],['dark','🌙 Oscuro'],['auto','Automático']].map(([t,l])=>`<button class="${th===t?'on':''}" data-act="setTheme" data-t="${t}">${l}</button>`).join('')}</div></div></div>
-    <div class="hero" style="margin-top:20px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr))">${goalCard()}
+    <div class="hero" style="margin-top:20px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr))">${goalCard(true)}
       <div class="card"><h3 style="font-size:20px">Tus datos</h3><p class="muted" style="margin:8px 0 14px;font-size:14px">Todo se guarda solo en este navegador de este equipo. Haz una copia de vez en cuando por si acaso.</p>
       <button class="btn small" data-act="export">Guardar copia de seguridad</button> <button class="btn small" data-act="restore">Restaurar copia</button><p class="muted" style="font-size:12px;margin:12px 0 0">Versión ${APP_VERSION}</p> ${(cfg.searches||[]).length?'<button class="btn small ghost" data-act="clearSearches">Borrar historial de búsquedas</button>':''}</div></div>
     ${statsHTML()}`;
@@ -1234,6 +1250,7 @@ document.addEventListener('click',e=>{
     else if(act==='delList'){const i=cfg.lists.findIndex(l=>l.id===route.id);if(i>=0){const [l]=cfg.lists.splice(i,1);save();go('lib');toast(`Lista «${l.name}» eliminada`,{label:'Deshacer',fn:()=>{cfg.lists.splice(i,0,l);save();go('list',l.id)}})}}
     else if(act==='toggleList'){const l=cfg.lists.find(l=>l.id===a.dataset.id);l.ids=l.ids.includes(current)?l.ids.filter(x=>x!==current):[...l.ids,current];save();renderBook();render()}
     else if(act==='unlist'){const l=cfg.lists.find(l=>l.id===route.id);if(l){l.ids=l.ids.filter(x=>x!==a.dataset.id);save();render()}}
+    else if(act==='goalStep'||act==='goalSet'){const y=curYear(),g=+cfg.goals[y]||0;cfg.goals[y]=Math.max(0,Math.min(999,act==='goalSet'?+a.dataset.v:g+(+a.dataset.d)));save();render()}
     else if(act==='authorTab'){authorTab=a.dataset.s;render(true)}
     else if(act==='favBook'){const x=get(a.dataset.id);if(x){x.fav=!x.fav;save();render();toast(x.fav?`«${x.title}» en favoritos ♥`:'Quitado de favoritos')}}
     else if(act==='delBook') removeBook(a.dataset.id);
