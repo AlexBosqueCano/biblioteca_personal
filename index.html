@@ -806,9 +806,18 @@ async function sagaOf(qid,author){
   return {name,items};
 }
 const GENERIC=/^(fiction|ficcion|general|novela|novels?|literature|literatura|fiction, general|.*fiction, general|english fiction|spanish fiction|american fiction|nyt:.*|new york times.*|reading level.*|juvenile fiction|large type books|ebook|ebooks|fiction in english|translations.*)$/i;
-function subjectOf(d,ol){const all=[...(ol.subjects||[]),...(d.subjects||[])],g=d.genre||genreOf(all);
-  const sp=all.find(s=>s.length>3&&s.length<35&&!GENERIC.test(s.trim())&&!GMAP.some(([k])=>{const x=norm(s);return x===k||x.startsWith(k+' ')||x.endsWith(' '+k)})&&!/accessible|protected|daisy|in library|open library|award|prize|premio|\d{4}|fiction|ficci|imaginary|literature|literatura/i.test(s));
-  return sp||(g&&GREV[g])||''}
+function subjectsOf(d,ol){const all=[...(ol.subjects||[]),...(d.subjects||[])],g=d.genre||genreOf(all),seen=new Set();
+  const sp=all.filter(s=>{const x=norm(s);if(seen.has(x))return false;seen.add(x);return s.length>3&&s.length<35&&!GENERIC.test(s.trim())&&!GMAP.some(([k])=>x===k||x.startsWith(k+' ')||x.endsWith(' '+k))&&!/accessible|protected|daisy|in library|open library|award|prize|premio|\d{4}|fiction|ficci|imaginary|literature|literatura|"/i.test(s)}).slice(0,3);
+  return {sp,genre:g&&GREV[g]||''}}
+async function similarTo(d,ol){
+  const {sp,genre}=subjectsOf(d,ol),Q=s=>`subject:"${s}"`,out=[],add=l=>{for(const x of l)if(x.cover&&norm(x.title)!==norm(d.title)&&!out.some(y=>norm(y.title)===norm(x.title)))out.push(x)};
+  const run=async qq=>{try{add(await olq(`q=${encodeURIComponent(qq)}&sort=already_read`,30))}catch{}};
+  if(sp.length>=2) await run(sp.slice(0,2).map(Q).join(' AND '));
+  if(out.length<8&&sp.length) await run(Q(sp[0]));
+  if(out.length<8&&genre) await run(`subject:"${genre}"`);
+  if(!out.length&&d.author) await run(`author:"${d.author}"`);
+  return out.slice(0,14);
+}
 async function workInfo(it){
   let d={...it};
   if(!d.key){try{const r=(await lookup(it.title,it.author,1))[0];if(r)d={...r,...Object.fromEntries(Object.entries(it).filter(([,v])=>v))}}catch{}}
@@ -819,7 +828,7 @@ async function workInfo(it){
   if(!w&&!txt(ol.description))try{w=await wikiFind(`${d.title} ${d.author||''} novel`.trim(),ok,'en')}catch{}
   let saga=null;if(w?.wikibase_item)try{saga=await sagaOf(w.wikibase_item,d.author)}catch{}
   let similar=[];
-  if(!saga){const s=subjectOf(d,ol);try{similar=dedupe(await olq(s?`subject=${encodeURIComponent(s)}&sort=already_read`:`q=${encodeURIComponent(d.author||d.title)}`,36)).filter(x=>norm(x.title)!==norm(d.title)&&x.cover).slice(0,14)}catch{}}
+  if(!saga) similar=await similarTo(d,ol);
   return {d,summary:short(w?.extract||txt(ol.description),900),sumLang:w?(w.lang||'es'):'en',wiki:w?.content_urls?.desktop?.page||'',date:ol.first_publish_date||d.year||'',saga,similar};
 }
 function viewAuthor(){
