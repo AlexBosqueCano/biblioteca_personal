@@ -52,6 +52,10 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tile.here .cvw{outline:3px solid var(--accent);outline-offset:4px;border-radius:9px}
 .chiprow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0 6px;font-size:14px}
 .skel{color:var(--muted);font-style:italic}
+.ib.heart:hover,.ib.heart.on{background:#e5484d}
+.favbadge{position:absolute;left:12px;bottom:10px;z-index:3;width:26px;height:26px;border-radius:50%;background:#e5484d;color:#fff;display:grid;place-items:center;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.chip .muted{font-size:12px;margin-left:2px}
+.chip.on .muted{color:inherit;opacity:.7}
 [hidden]{display:none!important}
 
 /* ---------- Barra lateral ---------- */
@@ -573,7 +577,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='11';let swReg=null,checking=false;
+const APP_VERSION='12';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -586,7 +590,7 @@ const emptyF=()=>({genre:'',author:'',rating:0,year:'',from:'',to:''});
 let books=[],cfg={name:'',theme:'',goals:{},favs:[],lists:[],searches:[]};
 let cat={q:'',state:'idle',items:[],authors:[]},catT,catSeq=0,prevRoute={v:'home'};
 const ONLINE=['home','discover','search','author','work'];
-let route={v:'home'},q='',sort='recent',status='all',F=emptyF(),statYear=null;
+let route={v:'home'},q='',sort='recent',status='all',F=emptyF(),statYear=null,authorTab='all';
 let current=null,editing=null,finRating=0,editNote=null,impBooks=[],listEdit=null,toastFn=null;
 let sug={key:null,state:'idle',groups:[]};
 const $=s=>document.querySelector(s);
@@ -627,7 +631,7 @@ let tt;
 function toast(m,o){const t=$('#toast');toastFn=o?.fn||null;t.innerHTML=`<span>${esc(m)}</span>${o?.label?`<button data-act="toastAct">${esc(o.label)}</button>`:''}`;t.classList.add('on');clearTimeout(tt);if(!o?.keep)tt=setTimeout(()=>t.classList.remove('on'),o?.fn?6000:2800)}
 const stars=n=>n?'★'.repeat(n)+'☆'.repeat(5-n):'';
 function cover(b){return `<div class="cover" style="--h:${hash(b.title)%360}"><span class="ct">${esc(b.title)}</span><span class="ca">${esc(b.author||'')}</span>${b.cover?`<img src="${esc(b.cover)}" alt="" loading="lazy" onerror="this.remove()">`:''}</div>`}
-function tile(b,i=0,extra=''){return `<div class="tile" data-open="${b.id}" style="--i:${Math.min(i,24)}"><div class="cvw">${cover(b)}<div class="tact">${extra}<button class="ib" data-act="delBook" data-id="${b.id}" title="Eliminar libro">${TRASH}</button></div></div>
+function tile(b,i=0,extra=''){return `<div class="tile" data-open="${b.id}" style="--i:${Math.min(i,24)}"><div class="cvw">${cover(b)}${b.fav?'<span class="favbadge">♥</span>':''}<div class="tact">${extra}<button class="ib heart ${b.fav?'on':''}" data-act="favBook" data-id="${b.id}" title="${b.fav?'Quitar de favoritos':'Añadir a favoritos'}">♥</button><button class="ib" data-act="delBook" data-id="${b.id}" title="Eliminar libro">${TRASH}</button></div></div>
   <div class="t">${esc(b.title)}</div><div class="a">${esc(b.author||'')}</div>
   ${b.status==='want'?'<div class="tag">Próxima lectura</div>':b.status==='reading'?'<div class="tag">Leyendo</div>':`<div class="stars">${stars(b.rating)}</div>`}${b.reread?'<div class="tag">↻ Para releer</div>':''}</div>`}
 function go(v,id,extra){ track('seccion',{seccion:v}); if(isDetail(v)){hist.push(route);try{history.pushState({d:1},'')}catch{}} else hist=[]; route={v,id,...(extra||{})}; render(true); $('#main').scrollTop=0 }
@@ -637,7 +641,7 @@ function inDates(b){ if(!F.from&&!F.to&&!F.year) return true; const d=rk(b); if(
   return (!F.from||d>=F.from)&&(!F.to||d<=F.to) }
 function filt(list,useStatus){
   const nq=norm(q);
-  return list.filter(b=>(!useStatus||status==='all'||b.status===status)
+  return list.filter(b=>(!useStatus||status==='all'||(status==='fav'?b.fav:b.status===status))
     &&(!nq||norm([b.title,b.author,b.genre,b.summary,b.liked,...b.notes.map(n=>n.text)].join(' ')).includes(nq))
     &&(!F.genre||b.genre===F.genre)&&(!F.author||norm(b.author)===F.author)
     &&(F.rating>0?(b.rating||0)>=F.rating:F.rating<0?!b.rating:true)&&inDates(b)).sort(SORTS[sort]);
@@ -653,7 +657,7 @@ function filterBar(withStatus){
   const auths=authorsData().sort((a,b)=>a.name.localeCompare(b.name,'es')).map(a=>[a.k,a.name]);
   const years=[...new Set(books.map(b=>rk(b).slice(0,4)).filter(Boolean))].sort().reverse().map(y=>[y,y]);
   const any=Object.values(F).some(Boolean)||q;
-  return `<div class="fbar">${withStatus?`<div class="chips">${[['all','Todos'],['reading','Leyendo'],['read','Leídos'],['want','Próximas']].map(([s,t])=>`<button class="chip ${status===s?'on':''}" data-act="status" data-s="${s}">${t}</button>`).join('')}</div>`:''}
+  return `<div class="fbar">${withStatus?`<div class="chips">${[['all','Todos'],['reading','Leyendo'],['read','Leídos'],['want','Próximas'],['fav','♥ Favoritos']].map(([s,t])=>`<button class="chip ${status===s?'on':''}" data-act="status" data-s="${s}">${t}</button>`).join('')}</div>`:''}
     ${sel('genre',genres,'Todos','Género')}${sel('author',auths,'Todos','Autor')}
     ${sel('rating',[[5,'★★★★★'],[4,'★★★★ o más'],[3,'★★★ o más'],[2,'★★ o más'],[-1,'Sin valorar']],'Cualquiera','Valoración')}
     ${sel('year',years,'Todos','Año')}
@@ -889,8 +893,12 @@ function viewList(){
     :emptyBox(hint[0],'Esta lista está vacía',hint[1],hint[2]));
 }
 function viewAuthors(){
-  const nq=norm(q),al=authorsData().filter(a=>!nq||a.k.includes(nq));
-  return `<div class="vh"><h1>Autores<small>${al.length} ${al.length===1?'autor':'autores'}${cfg.favs.length?' · favoritos primero':''}</small></h1></div>`+
+  const nq=norm(q),all=authorsData(),af=authorTab;
+  const al=all.filter(a=>(!nq||a.k.includes(nq))&&(af==='all'||(af==='read'?a.read>0:cfg.favs.includes(a.k))));
+  const cnt={all:all.length,read:all.filter(a=>a.read>0).length,fav:all.filter(a=>cfg.favs.includes(a.k)).length};
+  const tabs=`<div class="fbar"><div class="chips">${[['all','Todos'],['read','Leídos'],['fav','♥ Favoritos']].map(([s,t])=>`<button class="chip ${af===s?'on':''}" data-act="authorTab" data-s="${s}">${t} <span class="muted">${cnt[s]}</span></button>`).join('')}</div></div>`;
+  if(!al.length&&all.length) return `<div class="vh"><h1>Autores</h1></div>${tabs}`+(af==='fav'?emptyBox('♥','Aún no tienes autores favoritos','Pulsa el corazón de un autor (aquí o en su perfil) para tenerlo a mano.'):af==='read'?emptyBox('✍️','Aún no has terminado ningún libro','Aquí saldrán los autores de los libros que hayas leído.'):emptyBox('🔎','Nada por aquí','Ningún autor coincide con la búsqueda.'));
+  return `<div class="vh"><h1>Autores<small>${al.length} ${al.length===1?'autor':'autores'}${af==='all'&&cfg.favs.length?' · favoritos primero':''}</small></h1></div>${all.length?tabs:''}`+
     (al.length?`<div class="authors">${al.map((a,i)=>`<div class="acard" data-act="openAuthor" data-n="${esc(a.name)}" style="--i:${Math.min(i,24)}"><div class="av" style="--h:${hash(a.k)%360}">${esc(a.name.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase())}</div>
       <div><b>${esc(a.name)}</b><small>${pl(a.n,'libro')}${a.read&&a.read!==a.n?` · ${a.read} leído${a.read===1?'':'s'}`:''}${a.rated?` · ★ ${(a.sum/a.rated).toFixed(1).replace('.',',')}`:''}</small></div>
       <button class="fav ${cfg.favs.includes(a.k)?'on':''}" data-act="fav" data-k="${esc(a.k)}" title="Autor favorito">♥</button></div>`).join('')}</div>`
@@ -1018,6 +1026,7 @@ function renderBook(){
       <button class="btn small danger" data-act="del">Eliminar</button>
     </div>
     <div class="lists"><span class="muted">Listas:</span>
+      <button class="chip ${b.fav?'on':''}" data-act="favCur">♥ Favoritos</button>
       ${b.status==='read'?`<button class="chip ${b.reread?'on':''}" data-act="reread">↻ Para releer</button>`:''}
       ${cfg.lists.map(l=>`<button class="chip ${l.ids.includes(b.id)?'on':''}" data-act="toggleList" data-id="${l.id}">${esc(l.name)}</button>`).join('')}
       <button class="chip dash" data-act="newList" data-book="1">＋ Nueva lista</button></div>
@@ -1209,6 +1218,8 @@ document.addEventListener('click',e=>{
     else if(act==='delList'){const i=cfg.lists.findIndex(l=>l.id===route.id);if(i>=0){const [l]=cfg.lists.splice(i,1);save();go('lib');toast(`Lista «${l.name}» eliminada`,{label:'Deshacer',fn:()=>{cfg.lists.splice(i,0,l);save();go('list',l.id)}})}}
     else if(act==='toggleList'){const l=cfg.lists.find(l=>l.id===a.dataset.id);l.ids=l.ids.includes(current)?l.ids.filter(x=>x!==current):[...l.ids,current];save();renderBook();render()}
     else if(act==='unlist'){const l=cfg.lists.find(l=>l.id===route.id);if(l){l.ids=l.ids.filter(x=>x!==a.dataset.id);save();render()}}
+    else if(act==='authorTab'){authorTab=a.dataset.s;render(true)}
+    else if(act==='favBook'){const x=get(a.dataset.id);if(x){x.fav=!x.fav;save();render();toast(x.fav?`«${x.title}» en favoritos ♥`:'Quitado de favoritos')}}
     else if(act==='delBook') removeBook(a.dataset.id);
     else if(act==='note') openBook(a.dataset.id,true);
     else if(act==='finish') openFinish(a.dataset.id);
@@ -1216,6 +1227,7 @@ document.addEventListener('click',e=>{
     else if(!b) return;
     else if(act==='rate'){b.rating=b.rating===+a.dataset.n?0:+a.dataset.n;save();renderBook();render()}
     else if(act==='start'){b.status='reading';b.start=today();b.end='';save();render();renderBook();toast('¡Buena lectura!')}
+    else if(act==='favCur'){b.fav=!b.fav;save();renderBook();render();toast(b.fav?'Añadido a favoritos ♥':'Quitado de favoritos')}
     else if(act==='reread'){b.reread=!b.reread;save();renderBook();render()}
     else if(act==='edit') openForm(current);
     else if(act==='fullWork'){$('#dlgBook').close();go('work',null,{it:{title:b.title,author:b.author,cover:b.cover,pages:b.pages,genre:b.genre}})}
