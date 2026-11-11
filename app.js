@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='25';let swReg=null,checking=false;
+const APP_VERSION='26';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -477,7 +477,8 @@ function authorPicks(a){
     const b=books.find(y=>norm(y.title)===norm(x.title)); const w=b?.rating>=4?2:(b?.rating&&b.rating<=2?-1.5:1);
     for(const sub of x.subjects||[]){const k=norm(sub);if(ok(k))S[k]=(S[k]||0)+w} }
   const shown=new Set((a.works||[]).map(x=>norm(x.title)));
-  const scored=all.map((x,i)=>{ if(ownT.has(norm(x.title))||!x.cover) return null;
+  const pack=/\(series\)|\bbox(ed)? ?set|\bcollection\b|omnibus|colecci[oó]n|estuche|pack\b|\b\d+\s*-\s*\d+\s*$|books? \d+ ?(-|to|y|&) ?\d+|trilog[iy]a? completa|complete (series|works)|obras completas/i;
+  const scored=all.map((x,i)=>{ if(ownT.has(norm(x.title))||!x.cover||pack.test(x.title)) return null;
     const sub=(x.subjects||[]).reduce((t,y)=>t+(S[norm(y)]||0),0);
     return {x,score:(G[x.genre]||0)*1.2+Math.min(sub,8)*0.7+(all.length-i)/all.length*1.5,shown:shown.has(norm(x.title))} }).filter(Boolean);
   let list=scored.filter(o=>!o.shown).sort((p,q)=>q.score-p.score).slice(0,10).map(o=>o.x);
