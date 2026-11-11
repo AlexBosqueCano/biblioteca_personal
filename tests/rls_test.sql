@@ -35,5 +35,10 @@ insert into r(prueba,esperado,resultado) select 'anon puede leer books','false',
 insert into r(prueba,esperado,resultado) select 'anon puede leer settings','false', has_table_privilege('anon','public.settings','select')::text;
 insert into r(prueba,esperado,resultado) select 'anon puede borrar cuentas','false', has_function_privilege('anon','public.delete_my_account()','execute')::text;
 insert into r(prueba,esperado,resultado) select 'usuarios pueden ejecutar books_limit','false', has_function_privilege('authenticated','public.books_limit()','execute')::text;
+insert into r(prueba,esperado,resultado) select 'usuarios pueden ver el uso de espacio','false', has_table_privilege('authenticated','private.usage','select')::text;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated","aal":"aal1"}',true);
+do $$ declare i int; begin begin for i in 1..120 loop insert into public.books (id,data) values ('g'||i, jsonb_build_object('t',repeat('a',190000))); end loop; insert into r(prueba,esperado,resultado) values('B supera 20 MB de espacio','rechazado','ACEPTADO'); exception when others then insert into r(prueba,esperado,resultado) values('B supera 20 MB de espacio','rechazado','rechazado'); end; end $$;
+reset role;
 select n, prueba, esperado, resultado, case when esperado=resultado then 'OK' else 'FALLO' end as estado from r order by n;
 rollback;

@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='21';let swReg=null,checking=false;
+const APP_VERSION='22';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -278,6 +278,15 @@ function signupCard(){
   return `<div class="card signup"><div class="si">☁️</div><div style="flex:1;min-width:220px"><b>Crea tu cuenta gratis</b><div class="muted" style="font-size:14px;margin-top:2px">Tus libros se guardarán en la nube y se sincronizarán solos entre el móvil y el ordenador. Si cambias de móvil, no perderás nada.</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small ghost" data-act="signupLater">Ahora no</button><button class="btn small primary" data-act="login">Crear cuenta</button></div></div>`;
 }
+/* Recordatorio de copia de seguridad: si hay libros y hace más de 30 días de la última copia (por dispositivo) */
+function backupCard(){
+  if(books.length<5||signupCard())return '';
+  let last=0,until=0;try{last=+localStorage.getItem('biblioteca.lastBackup')||0;until=+localStorage.getItem('biblioteca.backupHide')||0}catch{}
+  if(!last){try{localStorage.setItem('biblioteca.lastBackup',String(Date.now()));}catch{}return ''}
+  if(Date.now()-last<30*864e5||Date.now()<until)return '';
+  return `<div class="card signup"><div class="si">💾</div><div style="flex:1;min-width:220px"><b>Guarda una copia de tu biblioteca</b><div class="muted" style="font-size:14px;margin-top:2px">Hace más de un mes que no descargas una copia en este dispositivo. Tarda un segundo y te protege si algo falla.</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small ghost" data-act="backupLater">Más tarde</button><button class="btn small primary" data-act="export">Guardar copia</button></div></div>`;
+}
 function viewHome(){
   const h=new Date().getHours(),hi=h<6?'Buenas noches':h<13?'Buenos días':h<21?'Buenas tardes':'Buenas noches';
   const yr=curYear(),read=books.filter(b=>b.status==='read'),ry=read.filter(b=>(b.end||'').startsWith(yr));
@@ -288,7 +297,7 @@ function viewHome(){
   const sgRow=(kind,msg)=>{const sg=sug.groups.flatMap((g,gi)=>g.kind===kind?g.items.map((it,ii)=>({it,gi,ii})):[]).slice(0,14);
     return sg.length?`<div class="hrow">${sg.map(({it,gi,ii},i)=>sugTile(it,gi,ii,i)).join('')}</div>`:`<div class="dashed">${msg}</div>`};
   const row=(title,link,html)=>`<div class="sec"><div class="sech"><h2>${title}</h2>${link}</div>${html}</div>`;
-  return `${signupCard()}<div class="hero"><div class="hello"><h1>${hi}${cfg.name?', '+esc(cfg.name):''} 👋</h1>
+  return `${signupCard()}${backupCard()}<div class="hero"><div class="hello"><h1>${hi}${cfg.name?', '+esc(cfg.name):''} 👋</h1>
       <p>${reading.length?`Tienes ${pl(reading.length,'lectura')} en marcha.`:'¿Qué vas a leer hoy?'}</p>
       <div class="hk"><div><b>${ry.length}</b><span>leídos en ${yr}</span></div><div><b>${ry.reduce((s,b)=>s+(+b.pages||0),0).toLocaleString('es-ES')}</b><span>páginas este año</span></div><div><b>${read.length}</b><span>leídos en total</span></div><div><b>${nq}</b><span>citas guardadas</span></div></div></div>
     ${goalCard()}</div>
@@ -559,7 +568,7 @@ function viewProfile(){
       ${accountCard()}
       <div class="card"><h3 style="font-size:20px">Tus datos</h3><p class="muted" style="margin:8px 0 14px;font-size:14px">${cloud.user?'Tus libros se guardan en este dispositivo y en tu cuenta. Puedes descargar una copia cuando quieras.':'Ahora mismo todo se guarda solo en este dispositivo. Inicia sesión para no perderlo y usarlo en varios dispositivos, o haz una copia de vez en cuando.'}</p>
       <button class="btn small" data-act="export">Guardar copia de seguridad</button> <button class="btn small" data-act="restore">Restaurar copia</button><label class="check" style="margin-top:16px"><input type="checkbox" id="consentChk" ${consentVal()==='yes'?'checked':''}>Compartir estadísticas de uso anónimas</label>
-      <p class="muted" style="font-size:12px;margin:12px 0 0">Versión ${APP_VERSION} · <a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacidad</a></p> ${(cfg.searches||[]).length?'<button class="btn small ghost" data-act="clearSearches">Borrar historial de búsquedas</button>':''}</div></div>
+      <p class="muted" style="font-size:12px;margin:12px 0 0">Versión ${APP_VERSION} · <a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacidad</a> · <a href="condiciones.html" target="_blank" rel="noopener" style="color:var(--accent)">Aviso legal y condiciones</a></p> ${(cfg.searches||[]).length?'<button class="btn small ghost" data-act="clearSearches">Borrar historial de búsquedas</button>':''}</div></div>
     ${statsHTML()}`;
 }
 const VIEWS={home:viewHome,lib:viewLib,list:viewList,authors:viewAuthors,quotes:viewQuotes,discover:viewDiscover,search:viewSearch,author:viewAuthor,work:viewWork,profile:viewProfile};
@@ -763,7 +772,7 @@ function doImport(){
 }
 
 /* ---------- Copia de seguridad ---------- */
-function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({books,cfg},null,1)],{type:'application/json'}));a.download=`biblioteca-${today()}.json`;a.click();toast('Copia guardada en tu carpeta de descargas')}
+function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({books,cfg},null,1)],{type:'application/json'}));a.download=`biblioteca-${today()}.json`;a.click();try{localStorage.setItem('biblioteca.lastBackup',String(Date.now()))}catch{} toast('Copia guardada en tu carpeta de descargas');if(route.v==='home')render()}
 $('#restoreFile').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
   try{if(f.size>20e6)throw 0;const raw=JSON.parse(await f.text());const d=Array.isArray(raw)?raw:raw&&raw.books;if(!Array.isArray(d)||!d.length)throw 0;
     const old={books,cfg};
@@ -833,6 +842,7 @@ document.addEventListener('click',e=>{
     else if(act==='goalStep'||act==='goalSet'){const y=curYear(),g=+cfg.goals[y]||0;cfg.goals[y]=Math.max(0,Math.min(999,act==='goalSet'?+a.dataset.v:g+(+a.dataset.d)));save();render()}
     else if(act==='consent'){setConsent(a.dataset.v)}
     else if(act==='login'){openLogin()}
+    else if(act==='backupLater'){try{localStorage.setItem('biblioteca.backupHide',String(Date.now()+7*864e5))}catch{} render()}
     else if(act==='signupLater'){try{localStorage.setItem('biblioteca.signupHide',String(Date.now()+7*864e5))}catch{} render()}
     else if(act==='google'){signInGoogle()}
     else if(act==='sendMail'){sendMagic()}
@@ -902,6 +912,23 @@ function showInstallHelp(){
 addEventListener('appinstalled',()=>{track('app_instalada');$('#bInstall').hidden=true;toast('Aplicación instalada 🎉')});
 /* ================= Cuenta y sincronización (Supabase) ================= */
 const SB_URL='https://klgdjsvwwoppiuiodcwj.supabase.co',SB_KEY='sb_publishable_x39zAx3NuZ2vuUXqHXAoAg_dYWBEn6H';
+/* Protección anti-bots (Cloudflare Turnstile). Clave pública del widget; vacía = desactivado */
+const TS_KEY='';
+let tsP=null,tsId=null,tsWait=null;
+function loadTS(){ if(!TS_KEY)return Promise.resolve(null); if(tsP)return tsP;
+  tsP=new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';sc.async=true;sc.onload=()=>ok(window.turnstile);sc.onerror=()=>{tsP=null;ko(new Error('captcha'))};document.head.appendChild(sc)}); return tsP }
+async function getCaptcha(){
+  if(!TS_KEY)return null;
+  const ts=await loadTS();
+  return new Promise((ok,ko)=>{
+    tsWait={ok,ko};
+    const done=t=>{const w=tsWait;tsWait=null;w&&w.ok(t)}, fail=()=>{const w=tsWait;tsWait=null;w&&w.ko(new Error('captcha'))};
+    if(tsId===null) tsId=ts.render('#tsBox',{sitekey:TS_KEY,execution:'execute',appearance:'interaction-only',language:'es',callback:done,'error-callback':fail,'timeout-callback':fail});
+    else ts.reset(tsId);
+    ts.execute(tsId);
+    setTimeout(()=>{if(tsWait)fail()},60000);
+  });
+}
 const SB_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js',SB_SRI='sha384-uteMfOloLDGt042uDz+xHGF3ym63/WQ6rFq7murQRG8Ih7QrXGEGNtWd8688sb4O';
 const SYNC_KEY=KEY+'.sync',APP_URL=location.origin+location.pathname.replace(/index\.html$/,'');
 const cloud={sb:null,user:null,state:'off',last:0,err:'',timer:null,busy:false,again:false};
@@ -1095,7 +1122,7 @@ let googleOn=null;
 function checkGoogle(){ if(googleOn!==null)return; fetch(SB_URL+'/auth/v1/settings',{headers:{apikey:SB_KEY}}).then(r=>r.ok?r.json():null).then(j=>{googleOn=!!j?.external?.google; if($('#dlgLogin').open&&loginState.step==='start')renderLogin()}).catch(()=>{}) }
 function openLogin(){ loginState={step:'start'}; checkGoogle(); renderLogin(); $('#dlgLogin').showModal(); loadSB().catch(()=>{ loginState={step:'start',err:'No se ha podido conectar. Comprueba tu conexión a internet.'}; renderLogin() }) }
 function renderLogin(){
-  const s=loginState,legal=`<p class="legal">Al continuar aceptas que guardemos tu correo y tu biblioteca para darte el servicio. Más detalles en la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>`;
+  const s=loginState,legal=`<p class="legal">Al continuar aceptas las <a href="condiciones.html" target="_blank" rel="noopener">condiciones de uso</a> y que guardemos tu correo y tu biblioteca para darte el servicio, como explica la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>`;
   const err=s.err?`<p style="color:var(--danger);font-size:14px;margin:12px 0 0">${esc(s.err)}</p>`:'';
   if(s.step==='code'){
     $('#loginBody').innerHTML=`<p style="margin:0 0 6px">Te hemos enviado un correo a <b>${esc(s.email)}</b>.</p><p class="muted" style="margin:0;font-size:14px">${isStandalone()?'Escribe aquí el <b>código de 6 dígitos</b> que viene en el correo. No pulses el enlace: se abriría en el navegador y no en esta app.':'Escribe aquí el <b>código de 6 dígitos</b> del correo, o pulsa el enlace del correo desde este mismo dispositivo.'}</p>
@@ -1111,6 +1138,7 @@ function renderLogin(){
 }
 function authErr(e){const m=e?.message||String(e);
   if(/not authorized/i.test(m)) return 'El envío de correos todavía no está activado para todo el mundo. Usa «Continuar con Google» o inténtalo más adelante.';
+  if(/captcha/i.test(m)) return 'No se ha podido completar la comprobación anti-bots. Recarga la página y vuelve a intentarlo.';
   if(/security purposes|after \d+ seconds/i.test(m)) return 'Acabas de pedir un correo. Espera un minuto antes de pedir otro.';
   if(/rate|too many/i.test(m)) return 'Se ha alcanzado el límite de correos por hora. Espera un rato (como mucho una hora) y vuelve a intentarlo. Si ya te llegó un correo antes, puedes usar su código o su enlace mientras no haya caducado.';
   if(/invalid|expired/i.test(m)) return 'El código no es correcto o ha caducado. Pide uno nuevo.';
@@ -1121,7 +1149,7 @@ async function signInGoogle(){ try{const sb=await loadSB();const {error}=await s
 async function sendMagic(){
   const email=($('#l_email').value||'').trim(); if(!/^\S+@\S+\.\S+$/.test(email)){loginState={step:'start',email,err:'Escribe un correo válido.'};renderLogin();return}
   loginState={step:'start',email,busy:true};renderLogin();
-  try{const sb=await loadSB();const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:APP_URL}});if(error)throw error;loginState={step:'code',email}}
+  try{const sb=await loadSB();const captchaToken=await getCaptcha();const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:APP_URL,...(captchaToken?{captchaToken}:{})}});if(error)throw error;loginState={step:'code',email}}
   catch(e){loginState={step:'start',email,err:authErr(e)}}
   renderLogin();
 }

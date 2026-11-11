@@ -19,7 +19,7 @@ h3{font-size:16px;margin:18px 0 4px}
 a{color:var(--accent)}
 .muted{color:var(--muted)}
 table{width:100%;border-collapse:collapse;font-size:15px;margin:8px 0}
-td,th{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
+td,th{overflow-wrap:anywhere;border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
 th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
 .back{display:inline-block;margin-bottom:18px;font-weight:600;text-decoration:none}
 .box{background:color-mix(in srgb,var(--accent) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));border-radius:14px;padding:14px 18px;margin:14px 0}
@@ -32,7 +32,7 @@ nav.toc ol{margin:6px 0 0;padding-left:22px;columns:2 260px}
 <a class="back" href="./">← Volver a Mi biblioteca</a>
 <div class="card">
 <h1>Política de privacidad</h1>
-<p class="muted">Última actualización: 11 de noviembre de 2026</p>
+<p class="muted">Última actualización: 11 de noviembre de 2026 · <a href="condiciones.html">Aviso legal y condiciones de uso</a></p>
 
 <div class="box"><b>En resumen:</b> puedes usar Mi biblioteca sin registrarte y entonces tus datos no salen de tu dispositivo. Si creas una cuenta, guardamos tu correo y tu biblioteca para sincronizarla entre tus dispositivos, en servidores de la Unión Europea. Solo contamos visitas de forma anónima si nos das permiso. No vendemos ni cedemos tus datos, no hay publicidad y puedes borrar tu cuenta en cualquier momento desde la app.</div>
 
@@ -98,8 +98,9 @@ nav.toc ol{margin:6px 0 0;padding-left:22px;columns:2 260px}
 <table>
 <tr><th>Proveedor</th><th>Para qué</th><th>Ubicación de los datos</th></tr>
 <tr><td>Supabase</td><td>Base de datos y autenticación de las cuentas</td><td>Unión Europea (Irlanda)</td></tr>
-<tr><td>Cloudflare</td><td>Alojamiento y entrega de la aplicación</td><td>Red global</td></tr>
+<tr><td>Cloudflare</td><td>Alojamiento y entrega de la aplicación, y comprobación anti-bots (Turnstile) al pedir un código de acceso</td><td>Red global</td></tr>
 <tr><td>PostHog</td><td>Estadísticas de uso, solo con consentimiento</td><td>Unión Europea</td></tr>
+<tr><td>Google (Gmail)</td><td>Envío de los correos con el código de acceso a tu dirección de correo</td><td>Según la política de Google</td></tr>
 <tr><td>Google</td><td>Inicio de sesión, solo si eliges «Continuar con Google»</td><td>Según la política de Google</td></tr>
 <tr><td>jsDelivr</td><td>Entrega de la librería de inicio de sesión</td><td>Red global</td></tr>
 <tr><td>Open Library (Internet Archive), Wikipedia y Wikidata (Wikimedia Foundation)</td><td>Información y portadas de libros y autores</td><td>Estados Unidos</td></tr>
@@ -129,7 +130,7 @@ nav.toc ol{margin:6px 0 0;padding-left:22px;columns:2 260px}
 <p>Para cualquier otra solicitud, escribe a <a href="mailto:alexbosquecano@gmail.com">alexbosquecano@gmail.com</a> indicando qué derecho quieres ejercer y el correo de tu cuenta. Responderemos en el plazo máximo de un mes. Si consideras que no se han respetado tus derechos, puedes presentar una reclamación ante la <a href="https://www.aepd.es" target="_blank" rel="noopener">Agencia Española de Protección de Datos</a>.</p>
 
 <h2 id="seguridad">9. Seguridad</h2>
-<p>Aplicamos medidas técnicas para proteger tus datos: conexiones cifradas (HTTPS), aislamiento de los datos de cada usuario en la base de datos, verificación en dos pasos opcional, inicio de sesión sin contraseñas, políticas de seguridad del navegador contra la inyección de código y comprobación de la integridad de las librerías externas. Ningún sistema es completamente infalible; si detectamos un incidente que afecte a tus datos, te informaremos según exige la normativa.</p>
+<p>Aplicamos medidas técnicas para proteger tus datos: conexiones cifradas (HTTPS), aislamiento de los datos de cada usuario en la base de datos, verificación en dos pasos opcional, inicio de sesión sin contraseñas, protección anti-bots, límites de uso por cuenta, políticas de seguridad del navegador contra la inyección de código y comprobación de la integridad de las librerías externas. Ningún sistema es completamente infalible; si detectamos un incidente que afecte a tus datos, te informaremos según exige la normativa.</p>
 
 <h2 id="menores">10. Menores de edad</h2>
 <p>Para crear una cuenta hay que tener al menos 14 años, la edad mínima de consentimiento en España según la LOPDGDD. Los menores de esa edad pueden usar la app sin cuenta, o con la autorización de su padre, madre o tutor. Si sabemos que hay una cuenta de un menor de 14 años sin esa autorización, la eliminaremos.</p>
