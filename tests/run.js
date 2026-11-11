@@ -191,7 +191,7 @@ const evilFetch = async (u) => {
   s.sugs = [0, 1, 2, 3].map((i) => t.cleanSug({ id: i + 1, from_name: evil(i), message: evil(i + 1), status: 'new', seen: false, created_at: evil(i + 2),
     book: { title: evil(i + 3), author: evil(i + 4), cover: i % 2 ? 'javascript:alert(1)' : 'https://covers.openlibrary.org/b/id/1-M.jpg"><script>', key: evil(i), genre: evil(i + 5) } }));
   ok(s.sugs.every((x) => !/javascript|<script/.test(x.book.cover)), 'Las portadas de las sugerencias solo pueden ser de Open Library');
-  t.route = { v: 'friends' }; t.render(); t.route = { v: 'sugs' }; t.render();
+  t.route = { v: 'friends' }; t.render(); t.route = { v: 'sugs' }; t.render(); t.route = { v: 'home' }; t.render(); t.route = { v: 'profile' }; t.render();
   const qs = xctx.document.querySelector; xctx.document.querySelector = (sel) => (sel === 'dialog[open]' ? null : qs(sel));
   t.showSugPanel(); t.openSuggest({ title: evil(6), author: evil(7), cover: 'javascript:alert(1)' });
   xctx.document.querySelector = qs;

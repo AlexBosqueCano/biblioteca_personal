@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='27';let swReg=null,checking=false;
+const APP_VERSION='28';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -287,6 +287,13 @@ function backupCard(){
   return `<div class="card signup"><div class="si">💾</div><div style="flex:1;min-width:220px"><b>Guarda una copia de tu biblioteca</b><div class="muted" style="font-size:14px;margin-top:2px">Hace más de un mes que no descargas una copia en este dispositivo. Tarda un segundo y te protege si algo falla.</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small ghost" data-act="backupLater">Más tarde</button><button class="btn small primary" data-act="export">Guardar copia</button></div></div>`;
 }
+/* Aviso en Inicio cuando alguien te ha enviado una solicitud de amistad */
+function friendReqCard(){
+  if(!cloud.user||!soc.incoming.length)return '';
+  const r=soc.incoming[0],more=soc.incoming.length-1;
+  return `<div class="card signup">${avatar(r.name||r.email,'')}<div style="flex:1;min-width:200px"><b>${esc(r.name||r.email)} quiere ser tu amigo</b><div class="muted" style="font-size:14px;margin-top:2px">${esc(r.email)}${more?` · y ${pl(more,'solicitud más','solicitudes más')}`:''}. Si aceptas, podréis sugeriros libros.</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${more?'<button class="btn small ghost" data-nav="friends">Ver todas</button>':''}<button class="btn small ghost" data-act="friendNo" data-id="${r.id}">Rechazar</button><button class="btn small primary" data-act="friendYes" data-id="${r.id}">Aceptar</button></div></div>`;
+}
 function viewHome(){
   const h=new Date().getHours(),hi=h<6?'Buenas noches':h<13?'Buenos días':h<21?'Buenas tardes':'Buenas noches';
   const yr=curYear(),read=books.filter(b=>b.status==='read'),ry=read.filter(b=>(b.end||'').startsWith(yr));
@@ -297,7 +304,7 @@ function viewHome(){
   const sgRow=(kind,msg)=>{const sg=sug.groups.flatMap((g,gi)=>g.kind===kind?g.items.map((it,ii)=>({it,gi,ii})):[]).slice(0,14);
     return sg.length?`<div class="hrow">${sg.map(({it,gi,ii},i)=>sugTile(it,gi,ii,i)).join('')}</div>`:`<div class="dashed">${msg}</div>`};
   const row=(title,link,html)=>`<div class="sec"><div class="sech"><h2>${title}</h2>${link}</div>${html}</div>`;
-  return `${signupCard()}${backupCard()}<div class="hero"><div class="hello"><h1>${hi}${cfg.name?', '+esc(cfg.name):''} 👋</h1>
+  return `${friendReqCard()}${signupCard()}${backupCard()}<div class="hero"><div class="hello"><h1>${hi}${cfg.name?', '+esc(cfg.name):''} 👋</h1>
       <p>${reading.length?`Tienes ${pl(reading.length,'lectura')} en marcha.`:'¿Qué vas a leer hoy?'}</p>
       <div class="hk"><div><b>${ry.length}</b><span>leídos en ${yr}</span></div><div><b>${ry.reduce((s,b)=>s+(+b.pages||0),0).toLocaleString('es-ES')}</b><span>páginas este año</span></div><div><b>${read.length}</b><span>leídos en total</span></div><div><b>${nq}</b><span>citas guardadas</span></div></div></div>
     ${goalCard()}</div>
@@ -591,7 +598,8 @@ function viewProfile(){
   const ini=(cfg.name||'Yo').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(),th=cfg.theme||'auto';
   return `<div class="card prof" style="margin-top:10px"><div class="av">${esc(ini)}</div>
     <div style="flex:1;min-width:240px"><input class="name" id="pName" value="${esc(cfg.name)}" placeholder="Escribe tu nombre" maxlength="40">
-      <div class="muted">${pl(books.length,'libro')} en la biblioteca · ${read.length} ${read.length===1?'leído':'leídos'}${first?' · registrando desde '+first:''}</div></div>
+      <div class="muted">${pl(books.length,'libro')} en la biblioteca · ${read.length} ${read.length===1?'leído':'leídos'}${first?' · registrando desde '+first:''}</div>
+      ${cloud.user?`<button class="frchip" data-nav="friends">🤝 <b>${soc.friends.length}</b> ${soc.friends.length===1?'amigo':'amigos'}${soc.incoming.length?` <span class="hot">${pl(soc.incoming.length,'solicitud nueva','solicitudes nuevas')}</span>`:''} <span class="arr">→</span></button>`:''}</div>
     <div><div class="muted" style="font-size:13px;margin-bottom:6px">Tema</div><div class="seg">${[['light','☀️ Claro'],['dark','🌙 Oscuro'],['auto','Automático']].map(([t,l])=>`<button class="${th===t?'on':''}" data-act="setTheme" data-t="${t}">${l}</button>`).join('')}</div></div></div>
     <div class="hero" style="margin-top:20px;grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr))">${goalCard(true)}
       ${accountCard()}
