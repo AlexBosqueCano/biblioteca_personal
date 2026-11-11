@@ -38,17 +38,32 @@ La información de los libros y las portadas vienen de [Open Library](https://op
 
 La cuenta es opcional. Sin cuenta, todo se guarda solo en el dispositivo. Con cuenta (Google o enlace al correo), la biblioteca se guarda también en Supabase (proyecto `biblioteca`, región UE) y se sincroniza entre dispositivos. Cada usuario solo puede leer y modificar sus propios datos (seguridad a nivel de fila en las tablas `books` y `settings`). Si se edita el mismo libro en dos dispositivos, los cambios se mezclan campo a campo.
 
+## Seguridad
+
+- **Sin contraseñas propias:** se entra con Google o con un código de un solo uso por correo. La gestión de credenciales es de Supabase Auth.
+- **Verificación en dos pasos (TOTP)** opcional desde «Perfil». Si está activada, la base de datos no deja leer ni escribir nada hasta verificar el código, aunque se tenga la sesión.
+- **Aislamiento por usuario:** seguridad a nivel de fila; nadie puede ver, modificar ni crear datos de otra persona. Límites de tamaño y número de libros por usuario.
+- **Contra XSS:** todo lo que se pinta se escapa, todo lo que entra (copias, nube, APIs externas) se sanea, y la CSP prohíbe JavaScript en línea.
+- **Cabeceras:** CSP estricta, HSTS, sin iframes de terceros, `nosniff`, permisos del navegador desactivados.
+- **Librería externa** con versión fija y huella de integridad (SRI).
+- **Secretos:** el repositorio solo contiene claves públicas por diseño (la clave publicable de Supabase y la de proyecto de PostHog, que solo permiten lo que autorizan las reglas de la base de datos). `.gitignore` excluye `.env` y copias de seguridad.
+
 ## Privacidad
 
 Las estadísticas de uso (PostHog) solo se activan si la persona las acepta en el aviso inicial o en «Perfil». La política está en `privacidad.html`.
 
 ## Archivos
 
-- `index.html`: toda la aplicación (HTML, CSS y JavaScript).
+- `index.html`: estructura y estilos.
+- `app.js`: la lógica de la aplicación.
+- `analytics.js`: estadísticas de uso, solo con consentimiento.
 - `privacidad.html`: política de privacidad.
 - `manifest.webmanifest`, `sw.js` e iconos: lo necesario para instalarla y usarla sin conexión.
-- `version.json` y `_headers`: hacen que la app instalada se actualice sola.
+- `version.json`: hace que la app instalada se actualice sola.
+- `_headers`: cabeceras de seguridad (CSP, HSTS…) y de caché que aplica Cloudflare.
+- `tests/`: pruebas automáticas (`run.js`) y de la base de datos (`rls_test.sql`).
 
 ## Publicar una versión nueva
 
-Sube el número de versión en tres sitios a la vez: `APP_VERSION` en `index.html`, `VERSION` en `sw.js` y `version.json`. Al abrir la app, si la versión publicada es distinta, se recarga sola con la nueva.
+1. Ejecuta las pruebas: `node tests/run.js` (deben salir todas correctas).
+2. Sube el número de versión en tres sitios a la vez: `APP_VERSION` en `app.js`, `VERSION` en `sw.js` y `version.json`. Al abrir la app, si la versión publicada es distinta, se recarga sola con la nueva.

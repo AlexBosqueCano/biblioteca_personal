@@ -1,6 +1,20 @@
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://eu-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://klgdjsvwwoppiuiodcwj.supabase.co wss://klgdjsvwwoppiuiodcwj.supabase.co https://openlibrary.org https://covers.openlibrary.org https://es.wikipedia.org https://en.wikipedia.org https://www.wikidata.org https://query.wikidata.org https://eu.i.posthog.com https://eu-assets.i.posthog.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
 /
   Cache-Control: no-cache
 /index.html
+  Cache-Control: no-cache
+/app.js
+  Cache-Control: no-cache
+/analytics.js
+  Cache-Control: no-cache
+/privacidad.html
   Cache-Control: no-cache
 /sw.js
   Cache-Control: no-cache

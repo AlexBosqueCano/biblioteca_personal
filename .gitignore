@@ -1,0 +1,25 @@
+# Secretos y configuración local: nunca deben subirse
+.env
+.env.*
+*.pem
+*.key
+supabase/.temp/
+.dev.vars
+
+# Copias de seguridad de la biblioteca (contienen datos personales)
+biblioteca-*.json
+*.backup.json
+
+# Dependencias y artefactos
+node_modules/
+dist/
+.wrangler/
+coverage/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.log
