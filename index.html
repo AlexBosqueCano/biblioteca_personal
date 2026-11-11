@@ -807,7 +807,7 @@ async function sagaOf(qid,author){
 }
 const GENERIC=/^(fiction|ficcion|general|novela|novels?|literature|literatura|fiction, general|.*fiction, general|english fiction|spanish fiction|american fiction|nyt:.*|new york times.*|reading level.*|juvenile fiction|large type books|ebook|ebooks|fiction in english|translations.*)$/i;
 function subjectOf(d,ol){const all=[...(ol.subjects||[]),...(d.subjects||[])],g=d.genre||genreOf(all);
-  const sp=all.find(s=>s.length>3&&s.length<35&&!GENERIC.test(s.trim())&&!genreOf([s])&&!/accessible|protected|daisy|in library|open library|award|prize|premio|\d{4}|fiction|ficci|imaginary|literature|literatura/i.test(s));
+  const sp=all.find(s=>s.length>3&&s.length<35&&!GENERIC.test(s.trim())&&!GMAP.some(([k])=>{const x=norm(s);return x===k||x.startsWith(k+' ')||x.endsWith(' '+k)})&&!/accessible|protected|daisy|in library|open library|award|prize|premio|\d{4}|fiction|ficci|imaginary|literature|literatura/i.test(s));
   return sp||(g&&GREV[g])||''}
 async function workInfo(it){
   let d={...it};
