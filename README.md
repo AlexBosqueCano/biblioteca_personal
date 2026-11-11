@@ -10,6 +10,7 @@ Aplicación web básica que funciona como biblioteca personal: sirve para llevar
 - Importar de golpe una lista de libros desde un Excel, un CSV o un texto pegado.
 - Organizar en listas: próximas lecturas, para releer y listas propias.
 - Buscar y filtrar por autor, género, valoración y fechas.
+- Buscar cualquier libro o autor: ficha de cada autor (foto, biografía breve y sus libros más conocidos) y de cada libro (resumen, fecha, autor y otros libros de la saga o parecidos).
 - Reto anual de lectura, estadísticas por año y sugerencias de nuevos libros.
 - Tema claro y oscuro.
 
@@ -31,7 +32,7 @@ No hay servidor ni cuentas. Los libros se guardan en el navegador de cada dispos
 
 La web publicada recoge estadísticas anónimas de uso (visitas y acciones como añadir o terminar un libro) con [PostHog](https://posthog.com); nunca se envían los títulos ni el contenido de la biblioteca.
 
-La información de los libros y las portadas vienen de [Open Library](https://openlibrary.org).
+La información de los libros y las portadas vienen de [Open Library](https://openlibrary.org); las biografías, resúmenes y sagas, de [Wikipedia](https://es.wikipedia.org) y [Wikidata](https://www.wikidata.org).
 
 ## Archivos
 

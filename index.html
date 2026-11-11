@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#5b5bd6">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -34,6 +34,24 @@ button{cursor:pointer}
 input[type=text],input[type=number],input[type=date],select,textarea{border:1px solid var(--line);background:var(--bg);border-radius:11px;padding:10px 13px;width:100%;outline:none;transition:.15s}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
 .muted{color:var(--muted)}
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
+.av{position:relative;overflow:hidden}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.av.xl{width:150px;height:150px;font-size:46px;box-shadow:var(--shadow)}
+.back{border:none;background:none;color:var(--muted);font-weight:500;padding:6px 0;margin:4px 0 10px}
+.back:hover{color:var(--accent)}
+.ahead{display:flex;gap:30px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.ahead h1{font-size:36px;letter-spacing:-.6px}
+.ahead .sub{color:var(--muted);margin-top:4px}
+.bio{max-width:860px;line-height:1.65;font-size:16.5px;margin:16px 0 0}
+.bio a{color:var(--accent)}
+.acts2{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.acard.big{padding:18px 20px}.acard.big .av{width:70px;height:70px;font-size:24px}.acard.big b{font-size:19px}
+.acard .go{margin-left:auto;color:var(--accent);font-weight:600;font-size:14px;white-space:nowrap}
+.wk .cover{width:220px}
+.tile.here .cvw{outline:3px solid var(--accent);outline-offset:4px;border-radius:9px}
+.chiprow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0 6px;font-size:14px}
+.skel{color:var(--muted);font-style:italic}
 [hidden]{display:none!important}
 
 /* ---------- Barra lateral ---------- */
@@ -286,6 +304,8 @@ textarea{resize:vertical;min-height:76px;line-height:1.45}
   .hrow{grid-auto-columns:128px;gap:16px}
   .goalc{gap:14px}.noteform{flex-wrap:wrap}.noteform textarea{flex:1 1 100%;order:3}
   .row{flex-wrap:wrap}.db{padding:16px 18px 22px}.dh{padding:18px 18px 0}
+  input,select,textarea{font-size:16px!important}
+  .av.xl{width:104px;height:104px;font-size:34px}.ahead{gap:18px}.ahead h1{font-size:27px}.wk .cover{width:130px}
   .hero{grid-template-columns:1fr}.reading{grid-template-columns:1fr}
   .bk{flex-direction:column}.bk .cover{width:120px}.note .na{opacity:1}
 }
@@ -563,8 +583,8 @@ const MESL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','S
 const TRASH='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>';
 const emptyF=()=>({genre:'',author:'',rating:0,year:'',from:'',to:''});
 let books=[],cfg={name:'',theme:'',goals:{},favs:[],lists:[],searches:[]};
-let cat={q:'',state:'idle',items:[]},catT,catSeq=0,prevRoute='home';
-const ONLINE=['home','discover','search'];
+let cat={q:'',state:'idle',items:[],authors:[]},catT,catSeq=0,prevRoute={v:'home'};
+const ONLINE=['home','discover','search','author','work'];
 let route={v:'home'},q='',sort='recent',status='all',F=emptyF(),statYear=null;
 let current=null,editing=null,finRating=0,editNote=null,impBooks=[],listEdit=null,toastFn=null;
 let sug={key:null,state:'idle',groups:[]};
@@ -609,7 +629,7 @@ function cover(b){return `<div class="cover" style="--h:${hash(b.title)%360}"><s
 function tile(b,i=0,extra=''){return `<div class="tile" data-open="${b.id}" style="--i:${Math.min(i,24)}"><div class="cvw">${cover(b)}<div class="tact">${extra}<button class="ib" data-act="delBook" data-id="${b.id}" title="Eliminar libro">${TRASH}</button></div></div>
   <div class="t">${esc(b.title)}</div><div class="a">${esc(b.author||'')}</div>
   ${b.status==='want'?'<div class="tag">Próxima lectura</div>':b.status==='reading'?'<div class="tag">Leyendo</div>':`<div class="stars">${stars(b.rating)}</div>`}${b.reread?'<div class="tag">↻ Para releer</div>':''}</div>`}
-function go(v,id){ track('seccion',{seccion:v}); route={v,id}; render(true); $('#main').scrollTop=0 }
+function go(v,id,extra){ track('seccion',{seccion:v}); if(isDetail(v)){hist.push(route);try{history.pushState({d:1},'')}catch{}} else hist=[]; route={v,id,...(extra||{})}; render(true); $('#main').scrollTop=0 }
 function inDates(b){ if(!F.from&&!F.to&&!F.year) return true; const d=rk(b); if(!d) return false;
   if(F.year&&d.slice(0,4)!==F.year) return false;
   if(d.length===4) return (!F.from||d>=F.from.slice(0,4))&&(!F.to||d<=F.to.slice(0,4));
@@ -680,41 +700,152 @@ function viewHome(){
     ${row('Sugerencias por tus búsquedas','<a data-nav="discover">Ver más →</a>',sgRow('search',sugMsg('search')))}
     ${row('Sugerencias por tus últimas lecturas','<a data-nav="discover">Ver más →</a>',sgRow('read',sugMsg('read')))}`;
 }
-function sugMsg(kind){return sug.state==='loading'?'Buscando libros que te puedan gustar…':sug.state==='error'?'No se han podido cargar las sugerencias (hace falta conexión a internet).':kind==='search'?'Busca cualquier libro desde el buscador de arriba y aquí te propondré otros parecidos a lo que buscas.':'Añade algunos libros con autor o género y aquí aparecerán recomendaciones basadas en tus últimas lecturas.'}
-function sugTile(it,gi,ii,i){return `<div class="tile" style="--i:${Math.min(i,24)};cursor:default"><div class="cvw">${cover(it)}<div class="tact"><button class="ib add" data-act="addSug" data-g="${gi}" data-i="${ii}" title="Añadir a próximas lecturas">＋</button></div></div>
-  <div class="t">${esc(it.title)}</div><div class="a">${esc(it.author||'')}</div><button class="btn small" style="margin-top:8px" data-act="addSug" data-g="${gi}" data-i="${ii}">＋ Quiero leerlo</button></div>`}
+function sugMsg(kind){return sug.state==='loading'?'Buscando libros que te puedan gustar…':sug.state==='error'?'No se han podido cargar las sugerencias (hace falta conexión a internet).':kind==='search'&&(cfg.searches||[]).length?'No he encontrado libros nuevos para tus búsquedas recientes. Prueba a buscar otro autor o libro.':kind==='search'?'Busca cualquier libro desde el buscador de arriba y aquí te propondré otros parecidos a lo que buscas.':'Añade algunos libros con autor o género y aquí aparecerán recomendaciones basadas en tus últimas lecturas.'}
+function catTile(it,i=0){const w=regW(it),own=inLib(it);return `<div class="tile ${it.here?'here':''}" data-work="${w}" style="--i:${Math.min(i,24)}"><div class="cvw">${cover(it)}${own?'':`<div class="tact"><button class="ib add" data-act="addW" data-w="${w}" data-s="want" title="Añadir a próximas lecturas">＋</button></div>`}</div>
+  <div class="t">${esc(it.title)}</div><div class="a">${esc([it.author,it.year].filter(Boolean).join(' · '))}</div>${it.here?'<div class="tag">Este libro</div>':own?'<div class="tag">✓ En tu biblioteca</div>':`<button class="btn small" style="margin-top:8px" data-act="addW" data-w="${w}" data-s="want">＋ Quiero leerlo</button>`}</div>`}
+const sugTile=(it,gi,ii,i)=>catTile(it,i);
 function viewDiscover(){
   loadSug();
   const part=(kind,title)=>{const gs=sug.groups.filter(g=>g.kind===kind&&g.items.length);
     return `<div class="sec" style="margin-top:30px"><div class="sech"><h2 style="font-size:26px">${title}</h2></div>${gs.length?gs.map(g=>{const gi=sug.groups.indexOf(g);return `<h3 class="muted" style="font-size:16px;font-weight:500;margin:18px 0 10px">${esc(g.title)}</h3><div class="hrow">${g.items.map((it,ii)=>sugTile(it,gi,ii,ii)).join('')}</div>`}).join(''):`<div class="dashed">${sugMsg(kind)}</div>`}</div>`};
-  return `<div class="vh"><h1>Descubrir</h1><button class="btn small" data-act="reloadSug">↻ Actualizar</button></div>`+part('search','Por tus búsquedas')+part('read','Por tus últimas lecturas');
+  const rs=(cfg.searches||[]);
+  return `<div class="vh"><h1>Descubrir</h1><button class="btn small" data-act="reloadSug">↻ Actualizar</button></div>`+
+    (rs.length?`<div class="chiprow"><span class="muted">Tus búsquedas recientes:</span>${rs.map(s=>`<button class="chip" data-act="redoSearch" data-q="${esc(s.q)}">${esc(s.q)}</button>`).join('')}<button class="btn small ghost" data-act="clearSearches">Borrar</button></div>`:'')+
+    part('search','Por tus búsquedas')+part('read','Por tus últimas lecturas');
 }
 function inLib(it){const k=norm(it.title),a=norm(it.author);return books.some(b=>norm(b.title)===k&&(!a||!norm(b.author)||norm(b.author)===a))}
+function authorCard(a,big){return `<div class="acard ${big?'big':''}" data-act="openAuthor" data-n="${esc(a.name)}" data-k="${esc(a.key||'')}">${avatar(a.name,a.key?olAuthorPhoto(a.key):'')}
+  <div style="min-width:0"><b>${esc(a.name)}</b><small>${esc(['Autor/a',a.birth&&(a.birth+(a.death?' – '+a.death:'')),a.works?pl(a.works,'obra'):''].filter(Boolean).join(' · '))}</small>${a.top?`<small>Conocido por «${esc(a.top)}»</small>`:''}</div><span class="go">Ver perfil →</span></div>`}
 function viewSearch(){
   const own=filt(books,false);
   const res=cat.state==='loading'&&!cat.items.length?'<div class="dashed">Buscando…</div>'
     :cat.state==='error'?'<div class="dashed">No se ha podido buscar en el catálogo (hace falta conexión a internet).</div>'
     :cat.state==='idle'?'<div class="dashed">Escribe al menos 3 letras para buscar en el catálogo.</div>'
     :!cat.items.length?'<div class="dashed">No se ha encontrado ningún libro con ese texto.</div>'
-    :`<div class="grid">${cat.items.map((it,i)=>`<div class="tile" style="--i:${Math.min(i,24)};cursor:default"><div class="cvw">${cover(it)}</div>
-      <div class="t">${esc(it.title)}</div><div class="a">${esc([it.author,it.year].filter(Boolean).join(' · '))}</div>
-      ${inLib(it)?'<div class="tag" style="margin-top:8px">✓ En tu biblioteca</div>':`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn small primary" data-act="addCat" data-i="${i}" data-s="want">＋ Quiero leerlo</button><button class="btn small" data-act="addCat" data-i="${i}" data-s="reading" title="Empezar a leerlo hoy">Leer ya</button><button class="btn small" data-act="addCat" data-i="${i}" data-s="read" title="Añadir como leído">Leído</button></div>`}</div>`).join('')}</div>`;
-  return `<div class="vh"><h1>Buscar libros<small>«${esc(q.trim())}»</small></h1></div>
+    :`<div class="grid">${cat.items.map((it,i)=>catTile(it,i)).join('')}</div>`;
+  const au=cat.authors||[];
+  return `<div class="vh"><h1>Buscar<small>«${esc(q.trim())}»</small></h1></div>
+    ${au.length?`<div class="sech"><h2>${au.length===1?'Autor':'Autores'}</h2></div><div class="authors" style="margin-bottom:26px">${au.map((a,i)=>authorCard(a,i===0)).join('')}</div>`:''}
     ${own.length?`<div class="sech"><h2>En tu biblioteca</h2></div><div class="hrow">${own.slice(0,14).map((b,i)=>tile(b,i)).join('')}</div>`:''}
-    <div class="sec" style="margin-top:${own.length?26:0}px"><div class="sech"><h2>En el catálogo</h2><span class="muted" style="font-size:14px">${cat.state==='loading'?'Buscando…':''}</span></div>${res}</div>`;
+    <div class="sec" style="margin-top:${own.length||au.length?26:0}px"><div class="sech"><h2>Libros</h2><span class="muted" style="font-size:14px">${cat.state==='loading'?'Buscando…':''}</span></div>${res}</div>`;
+}
+async function searchAuthors(term){
+  const r=await getJSON(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(term)}&limit=8`);
+  const toks=norm(term).split(' ').filter(t=>t.length>1);
+  return (r.docs||[]).filter(a=>a.name&&(a.work_count||0)>0&&toks.every(t=>norm(a.name).includes(t)))
+    .sort((a,b)=>(b.work_count||0)-(a.work_count||0)).slice(0,3)
+    .map(a=>({name:a.name,key:a.key||'',top:a.top_work||'',works:a.work_count||0,birth:a.birth_date||'',death:a.death_date||''}));
 }
 function runCat(){
   clearTimeout(catT);const term=q.trim();
-  if(term.length<3){catSeq++;cat={q:term,state:'idle',items:[]};return}
-  cat={q:term,state:'loading',items:cat.items};
+  if(term.length<3){catSeq++;cat={q:term,state:'idle',items:[],authors:[]};return}
+  cat={q:term,state:'loading',items:cat.items,authors:cat.authors||[]};
   catT=setTimeout(async()=>{const my=++catSeq;
-    try{const seen=new Set(),r=(await olq(`q=${encodeURIComponent(term)}`,30)).filter(d=>{const k=norm(d.title)+'|'+norm(d.author);if(seen.has(k))return false;seen.add(k);return true});if(my!==catSeq)return;cat={q:term,state:'done',items:r}}
-    catch{if(my!==catSeq)return;cat={q:term,state:'error',items:[]}}
+    try{const [bk,au]=await Promise.all([olq(`q=${encodeURIComponent(term)}`,30),searchAuthors(term).catch(()=>[])]);
+      const r=dedupe(bk);if(my!==catSeq)return;cat={q:term,state:'done',items:r,authors:au};
+      setTimeout(()=>{if(my===catSeq&&q.trim()===term)recSearch()},1500)}
+    catch{if(my!==catSeq)return;cat={q:term,state:'error',items:[],authors:[]}}
     if(route.v==='search')render()},450);
 }
 function recSearch(it){
-  const term=q.trim(); if(term.length<3) return; it=it||cat.items[0]; if(!it) return;
-  cfg.searches=[{q:term,title:it.title||'',author:it.author||'',genre:it.genre||''},...(cfg.searches||[]).filter(s=>norm(s.q)!==norm(term))].slice(0,6);save();
+  const term=q.trim(); if(term.length<3) return;
+  const a=cat.authors&&cat.authors[0]; it=it||(a?{title:'',author:a.name,genre:''}:cat.items[0]); if(!it) return;
+  const before=JSON.stringify(cfg.searches||[]);
+  cfg.searches=[{q:term,title:it.title||'',author:it.author||'',genre:it.genre||''},...(cfg.searches||[]).filter(s=>norm(s.q)!==norm(term))].slice(0,6);
+  if(JSON.stringify(cfg.searches)!==before) save();
+}
+
+/* ---------- Fichas de autor y de libro (catálogo) ---------- */
+const CACHE={},REG=[];let hist=[];
+const isDetail=v=>v==='author'||v==='work';
+const regW=it=>{REG.push(it);return REG.length-1};
+const initials=n=>String(n||'?').trim().split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const olAuthorPhoto=k=>`https://covers.openlibrary.org/a/olid/${encodeURIComponent(k)}-M.jpg?default=false`;
+function avatar(name,photo,cls=''){return `<div class="av ${cls}" style="--h:${hash(norm(name))%360}">${esc(initials(name))}${photo?`<img src="${esc(photo)}" alt="" loading="lazy" onerror="this.remove()">`:''}</div>`}
+async function getJSON(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()}
+const txt=v=>typeof v==='string'?v:(v&&v.value)||'';
+function dedupe(l){const seen=new Set();return l.filter(d=>{const k=norm(d.title)+'|'+norm(d.author);if(!d.title||seen.has(k))return false;seen.add(k);return true})}
+function short(t,n){t=String(t||'').replace(/\[\d+\]:\s*\S+/g,'').replace(/\[([^\]]+)\]\[\d+\]/g,'$1').replace(/\(\s*\[?source\]?[^)]*\)/gi,'').replace(/-{3,}[\s\S]*$/,'').replace(/\s+/g,' ').trim();
+  if(t.length<=n)return t;const c=t.slice(0,n),p=c.lastIndexOf('. ');return p>n*.5?c.slice(0,p+1):c.replace(/\s\S*$/,'')+'…'}
+function cached(k,fn){ if(!CACHE[k]){CACHE[k]={s:'loading'};fn().then(d=>{CACHE[k]={s:'ok',d}},()=>{CACHE[k]={s:'err'}}).then(()=>{if(isDetail(route.v))render()})} return CACHE[k] }
+const WRITER=/escrit|novelist|poeta|poetisa|autor|autora|dramaturg|ensayist|periodist|fil[oó]sof|historiador|guionist|writer|author|poet|essayist|playwright|journalist|philosopher|historian/i;
+const BOOKRX=/novela|libro|obra|ensayo|saga|serie|poemario|cuento|relato|trilog|c[oó]mic|novel|book|series/i;
+const wikiSum=(t,l)=>getJSON(`https://${l}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g,'_'))}`);
+async function wikiFind(query,ok,l){
+  const s=await getJSON(`https://${l}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=3&format=json&origin=*`);
+  for(const x of (s.query?.search||[])){try{const d=await wikiSum(x.title,l);if(ok(d))return d}catch{}}
+  return null;
+}
+async function authorInfo(name,key){
+  if(!key){try{const r=await getJSON(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(name)}&limit=6`);const nn=norm(name),docs=r.docs||[];
+    const best=docs.filter(d=>norm(d.name)===nn).sort((a,b)=>(b.work_count||0)-(a.work_count||0))[0]||docs.sort((a,b)=>(b.work_count||0)-(a.work_count||0))[0];key=best?.key||''}catch{}}
+  const last=norm(name).split(' ').pop();
+  const ok=d=>d&&d.type==='standard'&&norm(d.title).includes(last)&&WRITER.test((d.description||'')+' '+(d.extract||'').slice(0,400));
+  let w=null,ol={};
+  try{const d=await wikiSum(name,'es');if(ok(d))w=d}catch{}
+  if(!w)try{w=await wikiFind(name+' escritor',ok,'es')}catch{}
+  if(key)try{ol=await getJSON(`https://openlibrary.org/authors/${key}.json`)}catch{}
+  if(!w&&!txt(ol.bio))try{w=await wikiFind(name+' writer',ok,'en')}catch{}
+  let works=[];
+  try{works=dedupe(await olq(key?`author_key=${encodeURIComponent(key)}&sort=already_read`:`author=${encodeURIComponent(name)}&sort=already_read`,30)).slice(0,10)}catch{}
+  const ph=(ol.photos||[]).find(x=>x>0);
+  return {name,key,desc:w?.description||'',bio:short(w?.extract||txt(ol.bio),520),bioLang:w?(w.lang||'es'):'en',wiki:w?.content_urls?.desktop?.page||'',
+    photo:w?.thumbnail?.source||(ph?`https://covers.openlibrary.org/a/id/${ph}-L.jpg`:(key?olAuthorPhoto(key):'')),birth:ol.birth_date||'',death:ol.death_date||'',works};
+}
+async function sagaOf(qid,author){
+  const c=await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${qid}&property=P179&format=json&origin=*`);
+  const sid=c.claims?.P179?.[0]?.mainsnak?.datavalue?.value?.id; if(!sid) return null;
+  const sp=`SELECT ?i ?iLabel ?o ?sLabel WHERE { ?i wdt:P179 wd:${sid}. OPTIONAL{?i p:P179 ?st. ?st ps:P179 wd:${sid}; pq:P1545 ?o.} BIND(wd:${sid} AS ?s) SERVICE wikibase:label{bd:serviceParam wikibase:language "es,en".} } LIMIT 60`;
+  const r=await getJSON(`https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(sp)}`);
+  const rows=r.results?.bindings||[];if(rows.length<2) return null;
+  const seen=new Set(),list=rows.map(x=>({q:x.i.value.split('/').pop(),t:x.iLabel?.value||'',o:parseFloat(x.o?.value)})).filter(x=>x.t&&!/^Q\d+$/.test(x.t)&&!seen.has(x.q)&&seen.add(x.q))
+    .sort((a,b)=>(isNaN(a.o)?999:a.o)-(isNaN(b.o)?999:b.o)).slice(0,14);
+  const items=await Promise.all(list.map(async x=>{let d=null;try{d=(await lookup(x.t,author,1))[0]}catch{}return {...(d||{author}),title:x.t,here:x.q===qid}}));
+  return {name:rows[0].sLabel?.value||'',items};
+}
+function subjectOf(d,ol){const g=d.genre||genreOf([...(d.subjects||[]),...(ol.subjects||[])]);if(g&&GREV[g])return GREV[g];
+  return [...(ol.subjects||[]),...(d.subjects||[])].find(s=>s.length<30&&!/accessible|protected|daisy|large type|in library|open library/i.test(s))||''}
+async function workInfo(it){
+  let d={...it};
+  if(!d.key){try{const r=(await lookup(it.title,it.author,1))[0];if(r)d={...r,...Object.fromEntries(Object.entries(it).filter(([,v])=>v))}}catch{}}
+  let ol={};if(d.key)try{ol=await getJSON(`https://openlibrary.org${d.key}.json`)}catch{}
+  const tw=norm(d.title).replace(/^(el|la|los|las|un|una|the|a|an) /,'').split(' ').find(t=>t.length>2)||norm(d.title);
+  const ok=w=>w&&w.type==='standard'&&norm(w.title).includes(tw)&&BOOKRX.test((w.description||'')+' '+(w.extract||'').slice(0,300));
+  let w=null;try{w=await wikiFind(`${d.title} ${d.author||''}`.trim(),ok,'es')}catch{}
+  if(!w&&!txt(ol.description))try{w=await wikiFind(`${d.title} ${d.author||''} novel`.trim(),ok,'en')}catch{}
+  let saga=null;if(w?.wikibase_item)try{saga=await sagaOf(w.wikibase_item,d.author)}catch{}
+  let similar=[];
+  if(!saga){const s=subjectOf(d,ol);try{similar=dedupe(await olq(s?`subject=${encodeURIComponent(s)}&sort=already_read`:`q=${encodeURIComponent(d.author||d.title)}`,36)).filter(x=>norm(x.title)!==norm(d.title)&&x.cover).slice(0,14)}catch{}}
+  return {d,summary:short(w?.extract||txt(ol.description),900),sumLang:w?(w.lang||'es'):'en',wiki:w?.content_urls?.desktop?.page||'',date:ol.first_publish_date||d.year||'',saga,similar};
+}
+function viewAuthor(){
+  const {name,key}=route,c=cached('a:'+norm(name)+'|'+(key||''),()=>authorInfo(name,key)),a=c.d||{};
+  const mine=books.filter(b=>norm(b.author)===norm(name)),readN=mine.filter(b=>b.status==='read').length,fav=cfg.favs.includes(norm(name));
+  const dates=[a.birth,a.death].filter(Boolean).join(' – ');
+  const works=c.s==='loading'?'<div class="dashed">Buscando sus libros…</div>':(a.works||[]).length?`<div class="hrow">${a.works.map((it,i)=>catTile(it,i)).join('')}</div>`:'<div class="dashed">No se han encontrado libros suyos en el catálogo.</div>';
+  return `<button class="back" data-act="back">← Volver</button>
+  <div class="ahead">${avatar(name,a.photo||(key?olAuthorPhoto(key):''),'xl')}<div style="flex:1;min-width:240px"><h1>${esc(name)}</h1>
+    <div class="sub">${esc([a.desc,dates].filter(Boolean).join(' · '))}</div>
+    <div class="acts2">${readN?`<button class="btn primary" data-act="authorBooks" data-k="${esc(norm(name))}" data-s="read">📚 Ver mis ${pl(readN,'libro leído','libros leídos')}</button>`:mine.length?`<button class="btn primary" data-act="authorBooks" data-k="${esc(norm(name))}" data-s="all">📚 Ver sus ${pl(mine.length,'libro')} en mi biblioteca</button>`:''}
+      <button class="btn ${fav?'':'ghost'}" data-act="fav" data-k="${esc(norm(name))}">${fav?'♥ Favorito':'♡ Marcar como favorito'}</button></div></div></div>
+  <p class="bio">${c.s==='loading'?'<span class="skel">Buscando su biografía…</span>':a.bio?esc(a.bio)+(a.bioLang!=='es'?' <span class="muted">(en inglés)</span>':'')+(a.wiki?` <a href="${esc(a.wiki)}" target="_blank" rel="noopener">Leer más</a>`:''):'<span class="muted">No se ha encontrado una biografía.</span>'}</p>
+  <div class="sec"><div class="sech"><h2>Sus libros más conocidos</h2></div>${works}</div>
+  ${mine.length?`<div class="sec"><div class="sech"><h2>En tu biblioteca</h2></div><div class="hrow">${mine.map((b,i)=>tile(b,i)).join('')}</div></div>`:''}`;
+}
+function viewWork(){
+  const it=route.it||{},c=cached('w:'+(it.key||norm(it.title+'|'+it.author)),()=>workInfo(it)),w=c.d||{},d=w.d||it;
+  const own=books.find(b=>norm(b.title)===norm(d.title)&&(!d.author||!b.author||norm(b.author)===norm(d.author)));
+  const id=regW(d),date=w.date||d.year||'';
+  const bottom=c.s==='loading'?'<div class="dashed">Buscando recomendaciones…</div>':w.saga?`<div class="sec"><div class="sech"><h2>Saga${w.saga.name?': '+esc(w.saga.name):''}</h2></div><div class="hrow">${w.saga.items.map((x,i)=>catTile(x,i)).join('')}</div></div>`
+    :(w.similar||[]).length?`<div class="sec"><div class="sech"><h2>Libros parecidos</h2></div><div class="hrow">${w.similar.map((x,i)=>catTile(x,i)).join('')}</div></div>`:'';
+  return `<button class="back" data-act="back">← Volver</button>
+  <div class="bk wk">${cover(d)}<div class="main">
+    <h2>${esc(d.title)}</h2><div class="au">${d.author?`<a data-act="openAuthor" data-n="${esc(d.author)}" data-k="${esc(d.akey||'')}">${esc(d.author)}</a>`:'Autor desconocido'}</div>
+    <div class="pills">${date?`<span class="pill">📅 ${esc(date)}</span>`:''}${d.pages?`<span class="pill">${d.pages} págs.</span>`:''}${d.genre?`<span class="pill">${esc(d.genre)}</span>`:''}${own?'<span class="pill st">En tu biblioteca</span>':''}</div>
+    <div class="acts">${own?`<button class="btn small primary" data-open="${own.id}">Abrir mi ficha</button>`:`<button class="btn small primary" data-act="addW" data-w="${id}" data-s="want">＋ Quiero leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="reading">Empezar a leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="read">Ya lo he leído</button>`}</div>
+    <h4>Resumen</h4><p class="bio" style="margin:0">${c.s==='loading'?'<span class="skel">Buscando información del libro…</span>':w.summary?esc(w.summary)+(w.sumLang!=='es'?' <span class="muted">(en inglés)</span>':'')+(w.wiki?` <a href="${esc(w.wiki)}" target="_blank" rel="noopener">Leer más</a>`:''):'<span class="muted">No se ha encontrado un resumen de este libro.</span>'}</p>
+    ${d.author?`<h4>Autor</h4><div style="max-width:520px">${authorCard({name:d.author,key:d.akey||''})}</div>`:''}
+  </div></div>${bottom}`;
 }
 function viewLib(){
   const list=filt(books,true);
@@ -736,7 +867,7 @@ function viewList(){
 function viewAuthors(){
   const nq=norm(q),al=authorsData().filter(a=>!nq||a.k.includes(nq));
   return `<div class="vh"><h1>Autores<small>${al.length} ${al.length===1?'autor':'autores'}${cfg.favs.length?' · favoritos primero':''}</small></h1></div>`+
-    (al.length?`<div class="authors">${al.map((a,i)=>`<div class="acard" data-act="pickAuthor" data-k="${esc(a.k)}" style="--i:${Math.min(i,24)}"><div class="av" style="--h:${hash(a.k)%360}">${esc(a.name.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase())}</div>
+    (al.length?`<div class="authors">${al.map((a,i)=>`<div class="acard" data-act="openAuthor" data-n="${esc(a.name)}" style="--i:${Math.min(i,24)}"><div class="av" style="--h:${hash(a.k)%360}">${esc(a.name.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase())}</div>
       <div><b>${esc(a.name)}</b><small>${pl(a.n,'libro')}${a.read&&a.read!==a.n?` · ${a.read} leído${a.read===1?'':'s'}`:''}${a.rated?` · ★ ${(a.sum/a.rated).toFixed(1).replace('.',',')}`:''}</small></div>
       <button class="fav ${cfg.favs.includes(a.k)?'on':''}" data-act="fav" data-k="${esc(a.k)}" title="Autor favorito">♥</button></div>`).join('')}</div>`
     :emptyBox('✍️','Sin autores todavía','Aparecerán solos a partir de los libros que añadas. Marca tus favoritos con el corazón.'));
@@ -788,7 +919,7 @@ function viewProfile(){
       <button class="btn small" data-act="export">Guardar copia de seguridad</button> <button class="btn small" data-act="restore">Restaurar copia</button> ${(cfg.searches||[]).length?'<button class="btn small ghost" data-act="clearSearches">Borrar historial de búsquedas</button>':''}</div></div>
     ${statsHTML()}`;
 }
-const VIEWS={home:viewHome,lib:viewLib,list:viewList,authors:viewAuthors,quotes:viewQuotes,discover:viewDiscover,search:viewSearch,profile:viewProfile};
+const VIEWS={home:viewHome,lib:viewLib,list:viewList,authors:viewAuthors,quotes:viewQuotes,discover:viewDiscover,search:viewSearch,author:viewAuthor,work:viewWork,profile:viewProfile};
 function render(anim){
   if(route.v==='list'&&route.id!=='want'&&route.id!=='reread'&&!cfg.lists.some(l=>l.id===route.id)) route={v:'lib'};
   const t=applyTheme();
@@ -806,11 +937,11 @@ function render(anim){
 
 /* ---------- Sugerencias ---------- */
 async function olq(params,n){
-  const base=`https://openlibrary.org/search.json?${params}&limit=${n}&fields=title,author_name,cover_i,subject,number_of_pages_median,first_publish_year`;
+  const base=`https://openlibrary.org/search.json?${params}&limit=${n}&fields=key,title,author_name,author_key,cover_i,subject,number_of_pages_median,first_publish_year`;
   let r=await fetch(base);
   if(!r.ok&&/&sort=/.test(base)) r=await fetch(base.replace(/&sort=[^&]*/,''));
   if(!r.ok) throw new Error(r.status);
-  return ((await r.json()).docs||[]).map(d=>({title:d.title,author:(d.author_name||[])[0]||'',year:d.first_publish_year||'',pages:d.number_of_pages_median||'',cover:d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`:'',genre:genreOf(d.subject)}));
+  return ((await r.json()).docs||[]).map(d=>({key:d.key||'',akey:(d.author_key||[])[0]||'',subjects:(d.subject||[]).slice(0,20),title:d.title,author:(d.author_name||[])[0]||'',year:d.first_publish_year||'',pages:d.number_of_pages_median||'',cover:d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`:'',genre:genreOf(d.subject)}));
 }
 const lookup=(title,author,n)=>{const e=encodeURIComponent;return olq(author?`title=${e(title)}&author=${e(author)}`:`q=${e(title)}`,n)};
 function genreOf(subs){ if(!subs) return ''; const s=subs.slice(0,40).map(norm); for(const [k,g] of GMAP) if(s.some(x=>x===k||x.startsWith(k+' ')||x.endsWith(' '+k))) return g; for(const [k,g] of GMAP) if(s.some(x=>x.includes(k))) return g; return '' }
@@ -850,13 +981,14 @@ function renderBook(){
   const en=editNote&&b.notes.find(n=>n.id===editNote);
   const pct=b.pages&&b.current?Math.min(100,Math.round(b.current/b.pages*100)):0;
   $('#bookBody').innerHTML=`<div class="bk">${cover(b)}<div class="main">
-    <h2>${esc(b.title)}</h2><div class="au">${b.author?`<a data-act="pickAuthor" data-k="${esc(norm(b.author))}" title="Ver todos sus libros">${esc(b.author)}</a>`:'Autor desconocido'}</div>
+    <h2>${esc(b.title)}</h2><div class="au">${b.author?`<a data-act="openAuthor" data-n="${esc(b.author)}" title="Ver perfil del autor">${esc(b.author)}</a>`:'Autor desconocido'}</div>
     <div class="pills"><span class="pill st">${st}</span>${b.genre?`<button class="pill" data-act="pickGenre" data-g="${esc(b.genre)}" title="Ver libros de este género">${esc(b.genre)}</button>`:''}${b.pages?`<span class="pill">${b.pages} págs.</span>`:''}${when?`<span class="pill">${when}</span>`:''}</div>
     ${b.status==='read'?`<div class="rate">${[1,2,3,4,5].map(n=>`<button data-act="rate" data-n="${n}" class="${n<=(b.rating||0)?'on':''}" title="${n}">★</button>`).join('')}</div>`:''}
     ${b.status==='reading'?`<div class="prog" style="max-width:420px">Pág. <input type="number" min="0" data-cur="${b.id}" value="${b.current||''}" placeholder="0">${b.pages?`<span>de ${b.pages}</span><div class="bar"><i style="width:${pct}%"></i></div><b>${pct}%</b>`:''}</div>`:''}
     <div class="acts">
       ${b.status==='reading'?`<button class="btn small primary" data-act="finish" data-id="${b.id}">Finalizar lectura</button>`:''}
       ${b.status==='want'?'<button class="btn small primary" data-act="start">Empezar a leer</button>':''}
+      <button class="btn small" data-act="fullWork">Ficha completa</button>
       <button class="btn small" data-act="edit">Editar</button>
       ${!b.cover||!b.author||!b.genre?'<button class="btn small" data-act="auto">Autocompletar ficha</button>':''}
       <button class="btn small danger" data-act="del">Eliminar</button>
@@ -1005,8 +1137,8 @@ function showQS(){
 }
 $('#q').addEventListener('input',e=>{q=e.target.value;
   if(ONLINE.includes(route.v)){
-    if(q.trim()){ if(route.v!=='search'){prevRoute=route.v;route={v:'search'}} runCat() }
-    else if(route.v==='search') route={v:prevRoute};
+    if(q.trim()){ if(route.v!=='search'){prevRoute=route;route={v:'search'}} runCat() }
+    else if(route.v==='search') route=prevRoute;
     $('#qs').hidden=true;render();return }
   if(route.v==='profile'){route={v:'lib'};status='all'}
   render();showQS()});
@@ -1040,6 +1172,11 @@ document.addEventListener('click',e=>{
     else if(act==='pickGenre'){F=emptyF();F.genre=a.dataset.g;status='all';clearQ();if($('#dlgBook').open)$('#dlgBook').close();go('lib')}
     else if(act==='random'){const pool=books.filter(x=>x.status==='want'||x.reread);if(!pool.length){openForm(null,'want');toast('Aún no tienes próximas lecturas: añade alguna y te propongo una al azar')}else{openBook(pool[Math.floor(Math.random()*pool.length)].id);toast('¿Qué tal este?')}}
     else if(act==='reloadSug'){loadSug(true);render()}
+    else if(act==='back'){ if(hist.length) history.back(); else go('home') }
+    else if(act==='openAuthor'){ if($('#dlgBook').open)$('#dlgBook').close(); go('author',null,{name:a.dataset.n,key:a.dataset.k||''}) }
+    else if(act==='authorBooks'){F=emptyF();F.author=a.dataset.k;status=a.dataset.s||'all';clearQ();go('lib')}
+    else if(act==='addW'){const it=REG[+a.dataset.w],s=a.dataset.s;if(it&&!inLib(it)){if(route.v==='search')recSearch(it);track('libro_añadido',{estado:s,origen:route.v});books.push({id:uid(),added:Date.now(),title:it.title,author:it.author||'',genre:it.genre||'',pages:it.pages||'',cover:it.cover||'',status:s,start:s==='reading'?today():'',end:'',rating:0,summary:'',liked:'',notes:[]});save();render();toast(`«${it.title}» añadido a ${s==='want'?'próximas lecturas':s==='reading'?'«Leyendo ahora»':'leídos'}`)}}
+    else if(act==='redoSearch'){q=a.dataset.q;$('#q').value=q;prevRoute=route;route={v:'search'};runCat();render(true)}
     else if(act==='addSug'){const g=sug.groups[+a.dataset.g],it=g&&g.items[+a.dataset.i];if(it){g.items.splice(+a.dataset.i,1);books.push({id:uid(),added:Date.now(),title:it.title,author:it.author,genre:it.genre||'',pages:it.pages||'',cover:it.cover,status:'want',start:'',end:'',rating:0,summary:'',liked:'',notes:[]});save();render();toast(`«${it.title}» añadido a próximas lecturas`)}}
     else if(act==='addCat'){const it=cat.items[+a.dataset.i],s=a.dataset.s;if(it){recSearch(it);books.push({id:uid(),added:Date.now(),title:it.title,author:it.author,genre:it.genre||'',pages:it.pages||'',cover:it.cover,status:s,start:s==='reading'?today():'',end:'',rating:0,summary:'',liked:'',notes:[]});save();render();toast(`«${it.title}» añadido a ${s==='want'?'próximas lecturas':s==='reading'?'«Leyendo ahora»':'leídos'}`)}}
     else if(act==='clearSearches'){cfg.searches=[];save();render();toast('Historial de búsquedas borrado')}
@@ -1057,6 +1194,7 @@ document.addEventListener('click',e=>{
     else if(act==='start'){b.status='reading';b.start=today();b.end='';save();render();renderBook();toast('¡Buena lectura!')}
     else if(act==='reread'){b.reread=!b.reread;save();renderBook();render()}
     else if(act==='edit') openForm(current);
+    else if(act==='fullWork'){$('#dlgBook').close();go('work',null,{it:{title:b.title,author:b.author,cover:b.cover,pages:b.pages,genre:b.genre}})}
     else if(act==='auto'){toast('Buscando…',{keep:true});enrich([b])}
     else if(act==='del') removeBook(current);
     else if(act==='saveNote') saveNote();
@@ -1067,6 +1205,7 @@ document.addEventListener('click',e=>{
   }
   if(e.target.matches&&e.target.matches('input,select,textarea,label')) return;
   const n=e.target.closest('[data-nav]'); if(n){ if(n.dataset.nav!=='lib'&&n.dataset.nav!=='list'){} F=emptyF();status='all';clearQ(); go(n.dataset.nav,n.dataset.id); return }
+  const wk=e.target.closest('[data-work]'); if(wk){go('work',null,{it:REG[+wk.dataset.work]});return}
   const o=e.target.closest('[data-open]'); if(o){openBook(o.dataset.open);return}
   if(e.target.tagName==='DIALOG'&&e.target.id!=='dlgForm'&&e.target.id!=='dlgFinish') e.target.close();
 });
@@ -1084,6 +1223,7 @@ $('#bookBody').addEventListener('keydown',e=>{if(e.target.id==='n_text'&&e.key==
 let installEvt=null;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('#bInstall').hidden=false});
 addEventListener('appinstalled',()=>{track('app_instalada');$('#bInstall').hidden=true;toast('Aplicación instalada 🎉')});
+addEventListener('popstate',()=>{if(hist.length){route=hist.pop();render(true);$('#main').scrollTop=0}});
 load();render(true);
 navigator.storage?.persist?.().catch(()=>{});
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
