@@ -1,5 +1,5 @@
 // Cambia VERSION en cada publicación (y también APP_VERSION en index.html y version.json)
-const VERSION='14';
+const VERSION='15';
 const C='biblioteca-v'+VERSION;
 const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES.map(f=>new Request(f,{cache:'reload'})))).then(()=>self.skipWaiting()))});

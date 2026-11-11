@@ -56,6 +56,11 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .favbadge{position:absolute;left:14px;top:10px;z-index:3;width:26px;height:26px;border-radius:50%;background:#e5484d;color:#fff;display:grid;place-items:center;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 .chip .muted{font-size:12px;margin-left:2px}
 .chip.on .muted{color:inherit;opacity:.7}
+.libsec{margin:8px 0 40px}
+.libh{display:flex;align-items:center;gap:12px;padding-bottom:12px;margin-bottom:20px;border-bottom:2px solid var(--line)}
+.libh h2{font-size:24px}
+.libi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);font-size:20px}
+.libn{background:var(--soft);color:var(--muted);border-radius:99px;padding:2px 11px;font-size:14px;font-weight:600}
 [hidden]{display:none!important}
 
 /* ---------- Barra lateral ---------- */
@@ -583,7 +588,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='14';let swReg=null,checking=false;
+const APP_VERSION='15';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -883,8 +888,13 @@ function viewWork(){
 }
 function viewLib(){
   const list=filt(books,true);
+  const any=q||Object.values(F).some(Boolean);
+  const group=(st,title,icon,emptyMsg)=>{const l=list.filter(b=>b.status===st);
+    if(!l.length&&(any||st==='want'))return '';
+    return `<section class="libsec"><div class="libh"><span class="libi">${icon}</span><h2>${title}</h2><span class="libn">${l.length}</span></div>${l.length?`<div class="grid">${l.map((b,i)=>tile(b,i)).join('')}</div>`:`<div class="dashed">${emptyMsg}</div>`}</section>`};
+  const grouped=status==='all'&&books.length?group('reading','Leyendo','📖','No estás leyendo nada ahora mismo.<br><button class="btn primary" data-act="add">＋ Empezar a leer</button>')+group('read','Leídos','✅','Cuando termines un libro aparecerá aquí.<br><button class="btn" data-act="import">Importar los que ya he leído</button>')+group('want','Próximas lecturas','🔖',''):'';
   return `<div class="vh"><h1>Biblioteca<small>${pl(list.length,'libro')}</small></h1></div>${filterBar(true)}`+
-    (list.length?`<div class="grid">${list.map((b,i)=>tile(b,i)).join('')}</div>`
+    (grouped&&(list.length||!any)?grouped:list.length?`<div class="grid">${list.map((b,i)=>tile(b,i)).join('')}</div>`
     :books.length?emptyBox('🔎','Nada por aquí','No hay libros que coincidan con la búsqueda o los filtros.','<button class="btn" data-act="clearF">Limpiar filtros</button>')
     :emptyBox('📚','Tu biblioteca está vacía','Añade el libro que estás leyendo o importa de golpe los que ya has leído.','<button class="btn primary" data-act="add">＋ Añadir libro</button><button class="btn" data-act="import">Importar lista</button>'));
 }
