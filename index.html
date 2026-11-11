@@ -716,7 +716,7 @@ function viewDiscover(){
 function inLib(it){const k=norm(it.title),a=norm(it.author);return books.some(b=>norm(b.title)===k&&(!a||!norm(b.author)||norm(b.author)===a))}
 function authorCard(a,big){const inf=big?cached('a:'+norm(a.name)+'|'+(a.key||''),()=>authorInfo(a.name,a.key)).d:null;if(inf){a={...a,photo:inf.photo,desc:inf.desc}}
   return `<div class="acard ${big?'big':''}" data-act="openAuthor" data-n="${esc(a.name)}" data-k="${esc(a.key||'')}">${avatar(a.name,a.photo||(a.key?olAuthorPhoto(a.key):''))}
-  <div style="min-width:0"><b>${esc(a.name)}</b><small>${esc([a.desc?a.desc[0].toUpperCase()+a.desc.slice(1):'Autor/a',a.birth&&(a.birth+(a.death?' – '+a.death:'')),a.works?pl(a.works,'obra'):''].filter(Boolean).join(' · '))}</small>${a.top?`<small>Conocido por «${esc(a.top)}»</small>`:''}</div><span class="go">Ver perfil →</span></div>`}
+  <div style="min-width:0"><b>${esc(a.name)}</b><small>${esc([a.desc?a.desc[0].toUpperCase()+a.desc.slice(1):'Autor/a',a.birth&&!/\d{4}/.test(a.desc||'')&&(a.birth+(a.death?' – '+a.death:'')),a.works?pl(a.works,'obra'):''].filter(Boolean).join(' · '))}</small>${a.top?`<small>Conocido por «${esc(a.top)}»</small>`:''}</div><span class="go">Ver perfil →</span></div>`}
 function mainAuthor(){
   const term=norm(cat.q||''),toks=term.split(' ').filter(t=>t.length>1);if(!toks.length)return null;
   const has=n=>toks.every(t=>norm(n).includes(t));
