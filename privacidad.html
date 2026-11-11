@@ -70,6 +70,8 @@ nav.toc ol{margin:6px 0 0;padding-left:22px;columns:2 260px}
 </table>
 <h3>Estadísticas de uso (solo con tu consentimiento)</h3>
 <p>Páginas vistas, secciones visitadas, acciones generales (por ejemplo «se ha añadido un libro» o «se ha instalado la app»), tipo de dispositivo y navegador, y país aproximado. La dirección IP se anonimiza. <b>Nunca</b> se envían títulos, notas ni el contenido de tu biblioteca.</p>
+<h3>Avisos de errores técnicos</h3>
+<p>Si la app falla, se envía un aviso técnico para poder arreglarlo: el tipo de error, en qué parte del código ocurrió, la versión de la app y el tipo de navegador y dispositivo. Antes de enviarlo se eliminan correos, claves y parámetros de las direcciones, y no se guarda tu dirección IP. <b>Nunca</b> incluye tus libros, notas ni datos de tu cuenta.</p>
 <h3>Búsquedas en catálogos públicos</h3>
 <p>Cuando buscas un libro o abres la ficha de un autor, el texto de la búsqueda se envía a catálogos públicos (Open Library, Wikipedia y Wikidata) para obtener la información. No se envía ningún dato de tu cuenta.</p>
 <p>No tratamos categorías especiales de datos ni tomamos decisiones automatizadas ni elaboramos perfiles con efectos sobre ti.</p>
@@ -80,6 +82,7 @@ nav.toc ol{margin:6px 0 0;padding-left:22px;columns:2 260px}
 <tr><td>Crear y gestionar tu cuenta, iniciar sesión y verificar tu identidad</td><td>Ejecución del servicio que solicitas al registrarte (art. 6.1.b)</td></tr>
 <tr><td>Guardar tu biblioteca en la nube y sincronizarla entre dispositivos</td><td>Ejecución del servicio (art. 6.1.b)</td></tr>
 <tr><td>Proteger la app y las cuentas frente a accesos indebidos y abusos</td><td>Interés legítimo en mantener un servicio seguro (art. 6.1.f)</td></tr>
+<tr><td>Detectar y corregir errores técnicos de la app</td><td>Interés legítimo en que el servicio funcione correctamente (art. 6.1.f)</td></tr>
 <tr><td>Estadísticas anónimas de uso para mejorar la app</td><td>Tu consentimiento (art. 6.1.a), que puedes retirar en cualquier momento</td></tr>
 <tr><td>Responder a tus consultas y solicitudes</td><td>Tu solicitud y nuestra obligación legal de atender tus derechos (art. 6.1.b y 6.1.c)</td></tr>
 </table>
@@ -89,6 +92,7 @@ nav.toc ol{margin:6px 0 0;padding-left:22px;columns:2 260px}
 <ul>
 <li><b>Cuenta y biblioteca:</b> mientras mantengas la cuenta. Al borrarla desde «Perfil» → «Borrar mi cuenta», se eliminan de inmediato la cuenta y toda tu biblioteca de nuestra base de datos.</li>
 <li><b>Datos técnicos de sesión:</b> el tiempo que conserve el proveedor de autenticación sus registros de seguridad.</li>
+<li><b>Avisos de errores:</b> un máximo de 90 días.</li>
 <li><b>Estadísticas:</b> el tiempo necesario para analizar el uso de la app, según la configuración del proveedor de analítica. Si retiras el consentimiento, se deja de recoger información desde ese momento.</li>
 <li><b>Consultas por correo:</b> el tiempo necesario para atenderlas y, después, durante los plazos legales de prescripción.</li>
 </ul>
@@ -99,6 +103,7 @@ nav.toc ol{margin:6px 0 0;padding-left:22px;columns:2 260px}
 <tr><th>Proveedor</th><th>Para qué</th><th>Ubicación de los datos</th></tr>
 <tr><td>Supabase</td><td>Base de datos y autenticación de las cuentas</td><td>Unión Europea (Irlanda)</td></tr>
 <tr><td>Cloudflare</td><td>Alojamiento y entrega de la aplicación, y comprobación anti-bots (Turnstile) al pedir un código de acceso</td><td>Red global</td></tr>
+<tr><td>Sentry (Functional Software)</td><td>Avisos de errores técnicos, sin datos personales</td><td>Unión Europea (Alemania)</td></tr>
 <tr><td>PostHog</td><td>Estadísticas de uso, solo con consentimiento</td><td>Unión Europea</td></tr>
 <tr><td>Google (Gmail)</td><td>Envío de los correos con el código de acceso a tu dirección de correo</td><td>Según la política de Google</td></tr>
 <tr><td>Google</td><td>Inicio de sesión, solo si eliges «Continuar con Google»</td><td>Según la política de Google</td></tr>

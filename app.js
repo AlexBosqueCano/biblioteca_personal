@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='23';let swReg=null,checking=false;
+const APP_VERSION='24';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -1017,6 +1017,8 @@ async function cloudSync(manual){
   }catch(e){
     cloud.state=navigator.onLine?'err':'offline';cloud.err=e?.message||String(e);
     if(/JWT|token|auth/i.test(cloud.err)) try{await cloud.sb.auth.refreshSession()}catch{}
+    else if(/espacio máximo|Límite de libros/i.test(cloud.err)) toast(cloud.err.includes('espacio')?'Tu cuenta ha llegado al espacio máximo (20 MB). Borra notas o libros que no necesites.':'Has llegado al máximo de libros de una cuenta.');
+    else if(navigator.onLine&&!/Failed to fetch|NetworkError|Load failed|network/i.test(cloud.err)) window.informarError?.(e,'sincronizar');
   }finally{
     cloud.busy=false;renderCloudBtn(); if(route.v==='profile') render();
     if(cloud.again){cloud.again=false;cloudDirty()}

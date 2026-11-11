@@ -244,6 +244,30 @@ const evilFetch = async (u) => {
   A.cloud.needMfa = true; const before = server.books.size; A.books.push(A.cleanBook({ id: 'z', title: 'Z' })); A.save(); await A.cloudSync();
   ok(server.books.size === before, 'Sin verificar la segunda capa (2FA) no se sincroniza nada');
 
+  /* Aviso de errores (errores.js): sin datos personales y sin scripts externos */
+  {
+    const src = read('errores.js');
+    ok(/connect-src[^;]*ingest\.de\.sentry\.io/.test(read('_headers')) && /var DSN = 'https:\/\/[0-9a-f]+@[^']+ingest\.de\.sentry\.io\/\d+'/.test(src), 'Sentry configurado en la UE y permitido por la CSP');
+    ok(!/<script|import\(|document\.createElement\(['"]script/.test(src), 'errores.js no carga código externo');
+    const bodies = [], handlers = {};
+    const win = { addEventListener: (t, f) => { handlers[t] = f; } };
+    const ctx2 = { window: win, location: { protocol: 'https:', origin: 'https://app.test', pathname: '/' }, navigator: { userAgent: 'UA', onLine: true },
+      matchMedia: () => ({ matches: false }), crypto: require('crypto').webcrypto, Uint8Array, JSON, Date, String, Array, Math,
+      fetch: (u, o) => { bodies.push({ u, b: o.body }); return Promise.resolve(); } };
+    vm.runInNewContext(src.replace(/var DSN = '[^']*';/, "var DSN = 'https://abc123@o1.ingest.de.sentry.io/42';"), ctx2);
+    const err = new Error('Fallo con ana.lopez@gmail.com en https://x.supabase.co/rest?apikey=SECRETO#token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc');
+    err.stack = 'Error: x\n    at sync (https://app.test/app.js:10:5)';
+    win.informarError(err, 'sincronizar');
+    const sentBody = bodies[0] && bodies[0].b || '';
+    ok(bodies.length === 1 && /ingest\.de\.sentry\.io\/api\/42\/envelope/.test(bodies[0].u), 'errores.js envía el aviso a Sentry');
+    ok(!/ana\.lopez|SECRETO|eyJhbGci/.test(sentBody) && /\[correo\]/.test(sentBody), 'El aviso de error no lleva correos, claves ni tokens');
+    for (let i = 0; i < 20; i++) win.informarError(new Error('e' + i));
+    ok(bodies.length <= 10, 'Como mucho 10 avisos de error por visita');
+    const ctx3 = { ...ctx2, window: { addEventListener: () => {} } }; let calls = 0; ctx3.fetch = () => { calls++; return Promise.resolve(); };
+    vm.runInNewContext(src.replace(/var DSN = '[^']*';/, "var DSN = '';"), ctx3); ctx3.window.informarError(new Error('x'));
+    ok(calls === 0, 'Sin DSN configurado no se envía nada');
+  }
+
   console.log(`\n${passed} correctas, ${failed} fallidas`);
   process.exit(failed ? 1 : 0);
 })().catch((e) => { console.error('ERROR', e); process.exit(1); });
