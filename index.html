@@ -714,20 +714,30 @@ function viewDiscover(){
     part('search','Por tus búsquedas')+part('read','Por tus últimas lecturas');
 }
 function inLib(it){const k=norm(it.title),a=norm(it.author);return books.some(b=>norm(b.title)===k&&(!a||!norm(b.author)||norm(b.author)===a))}
-function authorCard(a,big){return `<div class="acard ${big?'big':''}" data-act="openAuthor" data-n="${esc(a.name)}" data-k="${esc(a.key||'')}">${avatar(a.name,a.key?olAuthorPhoto(a.key):'')}
-  <div style="min-width:0"><b>${esc(a.name)}</b><small>${esc(['Autor/a',a.birth&&(a.birth+(a.death?' – '+a.death:'')),a.works?pl(a.works,'obra'):''].filter(Boolean).join(' · '))}</small>${a.top?`<small>Conocido por «${esc(a.top)}»</small>`:''}</div><span class="go">Ver perfil →</span></div>`}
+function authorCard(a,big){const inf=big?cached('a:'+norm(a.name)+'|'+(a.key||''),()=>authorInfo(a.name,a.key)).d:null;if(inf){a={...a,photo:inf.photo,desc:inf.desc}}
+  return `<div class="acard ${big?'big':''}" data-act="openAuthor" data-n="${esc(a.name)}" data-k="${esc(a.key||'')}">${avatar(a.name,a.photo||(a.key?olAuthorPhoto(a.key):''))}
+  <div style="min-width:0"><b>${esc(a.name)}</b><small>${esc([a.desc?a.desc[0].toUpperCase()+a.desc.slice(1):'Autor/a',a.birth&&(a.birth+(a.death?' – '+a.death:'')),a.works?pl(a.works,'obra'):''].filter(Boolean).join(' · '))}</small>${a.top?`<small>Conocido por «${esc(a.top)}»</small>`:''}</div><span class="go">Ver perfil →</span></div>`}
+function mainAuthor(){
+  const term=norm(cat.q||''),toks=term.split(' ').filter(t=>t.length>1);if(!toks.length)return null;
+  const has=n=>toks.every(t=>norm(n).includes(t));
+  let a=(cat.authors||[]).find(x=>has(x.name));
+  const byItems=(cat.items||[]).filter(x=>x.author&&has(x.author));
+  if(!a&&byItems.length>=2){const it=byItems[0];a={name:it.author,key:it.akey||'',works:byItems.length}}
+  return a||null;
+}
 function viewSearch(){
-  const own=filt(books,false);
+  const own=filt(books,false),ma=mainAuthor();
+  const mine=ma?cat.items.filter(x=>norm(x.author)===norm(ma.name)):[],rest=ma?cat.items.filter(x=>norm(x.author)!==norm(ma.name)):cat.items;
   const res=cat.state==='loading'&&!cat.items.length?'<div class="dashed">Buscando…</div>'
     :cat.state==='error'?'<div class="dashed">No se ha podido buscar en el catálogo (hace falta conexión a internet).</div>'
     :cat.state==='idle'?'<div class="dashed">Escribe al menos 3 letras para buscar en el catálogo.</div>'
     :!cat.items.length?'<div class="dashed">No se ha encontrado ningún libro con ese texto.</div>'
-    :`<div class="grid">${cat.items.map((it,i)=>catTile(it,i)).join('')}</div>`;
-  const au=cat.authors||[];
+    :rest.length?`<div class="grid">${rest.map((it,i)=>catTile(it,i)).join('')}</div>`:'';
   return `<div class="vh"><h1>Buscar<small>«${esc(q.trim())}»</small></h1></div>
-    ${au.length?`<div class="sech"><h2>${au.length===1?'Autor':'Autores'}</h2></div><div class="authors" style="margin-bottom:26px">${au.map((a,i)=>authorCard(a,i===0)).join('')}</div>`:''}
-    ${own.length?`<div class="sech"><h2>En tu biblioteca</h2></div><div class="hrow">${own.slice(0,14).map((b,i)=>tile(b,i)).join('')}</div>`:''}
-    <div class="sec" style="margin-top:${own.length||au.length?26:0}px"><div class="sech"><h2>Libros</h2><span class="muted" style="font-size:14px">${cat.state==='loading'?'Buscando…':''}</span></div>${res}</div>`;
+    ${ma?`<div class="sech"><h2>Autor</h2></div><div style="max-width:640px">${authorCard(ma,true)}</div>
+      ${mine.length?`<div class="sec" style="margin-top:22px"><div class="sech"><h2>Libros de ${esc(ma.name)}</h2><a data-act="openAuthor" data-n="${esc(ma.name)}" data-k="${esc(ma.key||'')}">Ver perfil →</a></div><div class="hrow">${mine.map((it,i)=>catTile(it,i)).join('')}</div></div>`:''}`:''}
+    ${own.length?`<div class="sec" style="margin-top:${ma?26:0}px"><div class="sech"><h2>En tu biblioteca</h2></div><div class="hrow">${own.slice(0,14).map((b,i)=>tile(b,i)).join('')}</div></div>`:''}
+    ${rest.length||!ma||cat.state!=='done'?`<div class="sec" style="margin-top:${own.length||ma?26:0}px"><div class="sech"><h2>${ma?'Otros resultados':'Libros'}</h2><span class="muted" style="font-size:14px">${cat.state==='loading'?'Buscando…':''}</span></div>${res}</div>`:''}`;
 }
 async function searchAuthors(term){
   const r=await getJSON(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(term)}&limit=8`);
@@ -767,7 +777,7 @@ const txt=v=>typeof v==='string'?v:(v&&v.value)||'';
 function dedupe(l){const seen=new Set();return l.filter(d=>{const k=norm(d.title)+'|'+norm(d.author);if(!d.title||seen.has(k))return false;seen.add(k);return true})}
 function short(t,n){t=String(t||'').replace(/\[\d+\]:\s*\S+/g,'').replace(/\[([^\]]+)\]\[\d+\]/g,'$1').replace(/\(\s*\[?source\]?[^)]*\)/gi,'').replace(/-{3,}[\s\S]*$/,'').replace(/\s+/g,' ').trim();
   if(t.length<=n)return t;const c=t.slice(0,n),p=c.lastIndexOf('. ');return p>n*.5?c.slice(0,p+1):c.replace(/\s\S*$/,'')+'…'}
-function cached(k,fn){ if(!CACHE[k]){CACHE[k]={s:'loading'};fn().then(d=>{CACHE[k]={s:'ok',d}},()=>{CACHE[k]={s:'err'}}).then(()=>{if(isDetail(route.v))render()})} return CACHE[k] }
+function cached(k,fn){ if(!CACHE[k]){CACHE[k]={s:'loading'};fn().then(d=>{CACHE[k]={s:'ok',d}},()=>{CACHE[k]={s:'err'}}).then(()=>{if(isDetail(route.v)||route.v==='search')render()})} return CACHE[k] }
 const WRITER=/escrit|novelist|poeta|poetisa|autor|autora|dramaturg|ensayist|periodist|fil[oó]sof|historiador|guionist|writer|author|poet|essayist|playwright|journalist|philosopher|historian/i;
 const BOOKRX=/novela|libro|obra|ensayo|saga|serie|poemario|cuento|relato|trilog|c[oó]mic|novel|book|series/i;
 const wikiSum=(t,l)=>getJSON(`https://${l}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g,'_'))}`);
@@ -1239,7 +1249,16 @@ addEventListener('appinstalled',()=>{track('app_instalada');$('#bInstall').hidde
 addEventListener('popstate',()=>{if(hist.length){route=hist.pop();render(true);$('#main').scrollTop=0}});
 load();render(true);
 navigator.storage?.persist?.().catch(()=>{});
-if('serviceWorker' in navigator&&location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
+  const had=!!navigator.serviceWorker.controller;let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!reloaded){reloaded=true;location.reload()}});
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{reg.update();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update()})}).catch(()=>{});
+}
+/* sin zoom (Safari ignora user-scalable=no) */
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('gesturechange',e=>e.preventDefault());
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+let lastTouch=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastTouch<300&&!e.target.closest('input,textarea,select'))e.preventDefault();lastTouch=n},{passive:false});
 </script>
 </body>
 </html>
