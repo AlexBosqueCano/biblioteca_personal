@@ -573,6 +573,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
+const APP_VERSION='11';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -939,7 +940,7 @@ function viewProfile(){
     <div><div class="muted" style="font-size:13px;margin-bottom:6px">Tema</div><div class="seg">${[['light','☀️ Claro'],['dark','🌙 Oscuro'],['auto','Automático']].map(([t,l])=>`<button class="${th===t?'on':''}" data-act="setTheme" data-t="${t}">${l}</button>`).join('')}</div></div></div>
     <div class="hero" style="margin-top:20px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr))">${goalCard()}
       <div class="card"><h3 style="font-size:20px">Tus datos</h3><p class="muted" style="margin:8px 0 14px;font-size:14px">Todo se guarda solo en este navegador de este equipo. Haz una copia de vez en cuando por si acaso.</p>
-      <button class="btn small" data-act="export">Guardar copia de seguridad</button> <button class="btn small" data-act="restore">Restaurar copia</button> ${(cfg.searches||[]).length?'<button class="btn small ghost" data-act="clearSearches">Borrar historial de búsquedas</button>':''}</div></div>
+      <button class="btn small" data-act="export">Guardar copia de seguridad</button> <button class="btn small" data-act="restore">Restaurar copia</button><p class="muted" style="font-size:12px;margin:12px 0 0">Versión ${APP_VERSION}</p> ${(cfg.searches||[]).length?'<button class="btn small ghost" data-act="clearSearches">Borrar historial de búsquedas</button>':''}</div></div>
     ${statsHTML()}`;
 }
 const VIEWS={home:viewHome,lib:viewLib,list:viewList,authors:viewAuthors,quotes:viewQuotes,discover:viewDiscover,search:viewSearch,author:viewAuthor,work:viewWork,profile:viewProfile};
@@ -1252,8 +1253,28 @@ navigator.storage?.persist?.().catch(()=>{});
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
   const had=!!navigator.serviceWorker.controller;let reloaded=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!reloaded){reloaded=true;location.reload()}});
-  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{reg.update();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update()})}).catch(()=>{});
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{swReg=reg;reg.update()}).catch(()=>{});
 }
+/* Comprobación de versión: si hay una más nueva publicada, se recarga sola */
+
+async function checkUpdate(){
+  if(checking||!location.protocol.startsWith('http'))return;checking=true;
+  try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});const {v}=await r.json();
+    if(v&&v!==APP_VERSION){
+      if(document.querySelector('dialog[open]')){toast('Hay una versión nueva de la app',{label:'Actualizar',fn:()=>applyUpdate()});}
+      else applyUpdate();
+    }}catch{}
+  checking=false;
+}
+async function applyUpdate(){
+  try{if(swReg){await swReg.update();if(swReg.waiting)swReg.waiting.postMessage('skipWaiting')}}catch{}
+  if(sessionStorage.getItem('upd')===String(Date.now()).slice(0,8))return;
+  sessionStorage.setItem('upd',String(Date.now()).slice(0,8));
+  setTimeout(()=>location.reload(),400);
+}
+checkUpdate();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){swReg&&swReg.update().catch(()=>{});checkUpdate()}});
+setInterval(checkUpdate,30*60*1000);
 /* sin zoom (Safari ignora user-scalable=no) */
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('gesturechange',e=>e.preventDefault());

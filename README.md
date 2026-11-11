@@ -38,3 +38,8 @@ La información de los libros y las portadas vienen de [Open Library](https://op
 
 - `index.html`: toda la aplicación (HTML, CSS y JavaScript).
 - `manifest.webmanifest`, `sw.js` e iconos: lo necesario para instalarla y usarla sin conexión.
+- `version.json` y `_headers`: hacen que la app instalada se actualice sola.
+
+## Publicar una versión nueva
+
+Sube el número de versión en tres sitios a la vez: `APP_VERSION` en `index.html`, `VERSION` en `sw.js` y `version.json`. Al abrir la app, si la versión publicada es distinta, se recarga sola con la nueva.

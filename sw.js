@@ -1,10 +1,15 @@
-const C='biblioteca-v10';
+// Cambia VERSION en cada publicación (y también APP_VERSION en index.html y version.json)
+const VERSION='11';
+const C='biblioteca-v'+VERSION;
 const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
+self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES.map(f=>new Request(f,{cache:'reload'})))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
+self.addEventListener('message',e=>{if(e.data==='skipWaiting')self.skipWaiting()});
 self.addEventListener('fetch',e=>{
-  const u=new URL(e.request.url);
-  if(e.request.method!=='GET'||u.origin!==location.origin) return;
-  e.respondWith(fetch(e.request).then(r=>{const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp));return r})
-    .catch(()=>caches.match(e.request,{ignoreSearch:true}).then(r=>r||caches.match('./index.html'))));
+  const req=e.request,u=new URL(req.url);
+  if(req.method!=='GET'||u.origin!==location.origin) return;
+  if(u.pathname.endsWith('/version.json')||u.pathname.endsWith('/sw.js')) return; // siempre de la red
+  // Red primero, saltándose la caché HTTP del navegador; si no hay conexión, la copia guardada
+  e.respondWith(fetch(req,{cache:'no-store'}).then(r=>{if(r.ok){const cp=r.clone();caches.open(C).then(c=>c.put(req.mode==='navigate'?'./index.html':req,cp))}return r})
+    .catch(()=>caches.match(req,{ignoreSearch:true}).then(r=>r||caches.match('./index.html'))));
 });
