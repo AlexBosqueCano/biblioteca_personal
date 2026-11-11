@@ -29,6 +29,8 @@ y abre `http://localhost:8000`.
 
 No hay servidor ni cuentas. Los libros se guardan en el navegador de cada dispositivo, así que no se sincronizan entre ellos. Desde «Perfil» se puede guardar y restaurar una copia de seguridad.
 
+La web publicada recoge estadísticas anónimas de uso (visitas y acciones como añadir o terminar un libro) con [PostHog](https://posthog.com); nunca se envían los títulos ni el contenido de la biblioteca.
+
 La información de los libros y las portadas vienen de [Open Library](https://openlibrary.org).
 
 ## Archivos

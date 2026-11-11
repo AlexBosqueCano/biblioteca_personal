@@ -290,6 +290,12 @@ textarea{resize:vertical;min-height:76px;line-height:1.45}
   .bk{flex-direction:column}.bk .cover{width:120px}.note .na{opacity:1}
 }
 </style>
+<script>
+!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister identify alias set_config reset opt_in_capturing opt_out_capturing has_opted_out_capturing get_distinct_id".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+if(location.protocol.startsWith('http')&&!/^(localhost|127\.)/.test(location.hostname)){
+  posthog.init('phc_n9qTbE9fX36WouhPv7kYCv84FMWkc8FqwB7TDT9mzUnM',{api_host:'https://eu.i.posthog.com',person_profiles:'identified_only',autocapture:false,capture_pageview:true,disable_session_recording:true});
+}
+</script>
 </head>
 <body>
 <aside>
@@ -563,6 +569,7 @@ let route={v:'home'},q='',sort='recent',status='all',F=emptyF(),statYear=null;
 let current=null,editing=null,finRating=0,editNote=null,impBooks=[],listEdit=null,toastFn=null;
 let sug={key:null,state:'idle',groups:[]};
 const $=s=>document.querySelector(s);
+const track=(ev,props)=>{try{window.posthog?.capture?.(ev,props)}catch{}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
@@ -602,7 +609,7 @@ function cover(b){return `<div class="cover" style="--h:${hash(b.title)%360}"><s
 function tile(b,i=0,extra=''){return `<div class="tile" data-open="${b.id}" style="--i:${Math.min(i,24)}"><div class="cvw">${cover(b)}<div class="tact">${extra}<button class="ib" data-act="delBook" data-id="${b.id}" title="Eliminar libro">${TRASH}</button></div></div>
   <div class="t">${esc(b.title)}</div><div class="a">${esc(b.author||'')}</div>
   ${b.status==='want'?'<div class="tag">Próxima lectura</div>':b.status==='reading'?'<div class="tag">Leyendo</div>':`<div class="stars">${stars(b.rating)}</div>`}${b.reread?'<div class="tag">↻ Para releer</div>':''}</div>`}
-function go(v,id){ route={v,id}; render(true); $('#main').scrollTop=0 }
+function go(v,id){ track('seccion',{seccion:v}); route={v,id}; render(true); $('#main').scrollTop=0 }
 function inDates(b){ if(!F.from&&!F.to&&!F.year) return true; const d=rk(b); if(!d) return false;
   if(F.year&&d.slice(0,4)!==F.year) return false;
   if(d.length===4) return (!F.from||d>=F.from.slice(0,4))&&(!F.to||d<=F.to.slice(0,4));
@@ -897,7 +904,7 @@ $('#form').addEventListener('submit',e=>{
   const b=editing?get(editing):null;
   d.start=s==='want'?'':($('#f_start').value||(b?.start?.length===4?b.start:''));
   d.end=s==='read'?($('#f_end').value||(b?.end?.length===4?b.end:'')):'';
-  if(b) Object.assign(b,d); else books.push({id:uid(),added:Date.now(),rating:0,summary:'',liked:'',notes:[],...d});
+  if(!b) track('libro_añadido',{estado:s}); if(b) Object.assign(b,d); else books.push({id:uid(),added:Date.now(),rating:0,summary:'',liked:'',notes:[],...d});
   save();render();$('#dlgForm').close();
   if(b) renderBook(); else toast(s==='reading'?'¡Buena lectura!':s==='want'?'Añadido a próximas lecturas':'Libro añadido');
 });
@@ -934,7 +941,7 @@ function openFinish(id){current=id;const b=get(id);finRating=b.rating||0;$('#fin
 $('#finForm').addEventListener('submit',e=>{e.preventDefault();const b=get(current);
   Object.assign(b,{status:'read',end:$('#e_end').value||today(),rating:finRating,summary:$('#e_summary').value.trim(),liked:$('#e_liked').value.trim()});
   if(b.pages) b.current=b.pages;
-  save();render();$('#dlgFinish').close();toast('¡Enhorabuena! Guardado en leídos 🎉')});
+  track('libro_terminado');save();render();$('#dlgFinish').close();toast('¡Enhorabuena! Guardado en leídos 🎉')});
 
 /* ---------- Listas ---------- */
 function openList(id,addBook){ listEdit={id:id||null,addBook:addBook||null}; const l=id&&cfg.lists.find(l=>l.id===id);
@@ -973,7 +980,7 @@ function doImport(){
     const b={id:uid(),added:Date.now(),title:d.title,author:d.author||'',genre:d.genre||'',pages:d.pages||'',cover:'',status:stt,start:stt==='read'?(d.start||''):'',end:stt==='read'?(d.end||''):'',rating:d.rating||0,summary:d.summary||'',liked:'',notes:[]};
     books.push(b);added.push(b);
   }
-  save();$('#dlgImport').close();go(stt==='want'?'list':'lib',stt==='want'?'want':undefined);
+  track('importacion',{libros:added.length});save();$('#dlgImport').close();go(stt==='want'?'list':'lib',stt==='want'?'want':undefined);
   toast(`${pl(added.length,'libro importado','libros importados')}${dup?` (${dup} ya estaban)`:''}`);
   if($('#impAuto').checked&&added.length) setTimeout(()=>enrich(added),900);
 }
@@ -1076,7 +1083,7 @@ $('#bookBody').addEventListener('input',e=>{const f=e.target.dataset.field;if(f)
 $('#bookBody').addEventListener('keydown',e=>{if(e.target.id==='n_text'&&e.key==='Enter'&&!e.shiftKey){e.preventDefault();saveNote()}});
 let installEvt=null;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('#bInstall').hidden=false});
-addEventListener('appinstalled',()=>{$('#bInstall').hidden=true;toast('Aplicación instalada 🎉')});
+addEventListener('appinstalled',()=>{track('app_instalada');$('#bInstall').hidden=true;toast('Aplicación instalada 🎉')});
 load();render(true);
 navigator.storage?.persist?.().catch(()=>{});
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
