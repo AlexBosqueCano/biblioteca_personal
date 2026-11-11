@@ -795,19 +795,19 @@ async function authorInfo(name,key){
 async function sagaOf(qid,author){
   const c=await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${qid}&property=P179&format=json&origin=*`);
   const sid=c.claims?.P179?.[0]?.mainsnak?.datavalue?.value?.id; if(!sid) return null;
-  const sp=`SELECT ?i ?iLabel ?o ?sLabel WHERE { ?i wdt:P179 wd:${sid}. OPTIONAL{?i p:P179 ?st. ?st ps:P179 wd:${sid}; pq:P1545 ?o.} BIND(wd:${sid} AS ?s) SERVICE wikibase:label{bd:serviceParam wikibase:language "es,en".} } LIMIT 60`;
+  const sp=`SELECT ?i ?iLabel ?o ?sLabel WHERE { ?i wdt:P179 wd:${sid}. OPTIONAL{?i p:P179 ?st. ?st ps:P179 wd:${sid}; pq:P1545 ?o.} BIND(wd:${sid} AS ?s) SERVICE wikibase:label{bd:serviceParam wikibase:language "es,mul,en".} } LIMIT 60`;
   const r=await getJSON(`https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(sp)}`);
   const rows=r.results?.bindings||[];if(rows.length<2) return null;
   const seen=new Set(),list=rows.map(x=>({q:x.i.value.split('/').pop(),t:x.iLabel?.value||'',o:parseFloat(x.o?.value)})).filter(x=>x.t&&!/^Q\d+$/.test(x.t)&&!seen.has(norm(x.t))&&seen.add(norm(x.t)))
     .sort((a,b)=>(isNaN(a.o)?999:a.o)-(isNaN(b.o)?999:b.o)).slice(0,14);
   const items=await Promise.all(list.map(async x=>{let d=null;try{d=(await lookup(x.t,author,1))[0];if(!d||!d.cover)d=(await lookup(`${x.t} ${author||''}`.trim(),'',1))[0]||d}catch{}return {...(d||{author}),title:x.t,author:(d&&d.author)||author||'',here:x.q===qid}}));
   let name=rows[0].sLabel?.value||'';
-  if(!name||/^Q\d+$/.test(name))try{const e=await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${sid}&props=labels&languages=es|en&format=json&origin=*`);const l=e.entities?.[sid]?.labels||{};name=(l.es||l.en||{}).value||''}catch{name=''}
+  if(!name||/^Q\d+$/.test(name))try{const e=await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${sid}&props=labels&format=json&origin=*`);const l=e.entities?.[sid]?.labels||{};name=(l.es||l.mul||l.en||{}).value||''}catch{name=''}
   return {name,items};
 }
 const GENERIC=/^(fiction|ficcion|general|novela|novels?|literature|literatura|fiction, general|.*fiction, general|english fiction|spanish fiction|american fiction|nyt:.*|new york times.*|reading level.*|juvenile fiction|large type books|ebook|ebooks|fiction in english|translations.*)$/i;
-function subjectOf(d,ol){const g=d.genre||genreOf([...(d.subjects||[]),...(ol.subjects||[])]);if(g&&GREV[g]&&GREV[g]!=='fiction')return GREV[g];
-  const sp=[...(ol.subjects||[]),...(d.subjects||[])].find(s=>s.length>3&&s.length<35&&!GENERIC.test(s.trim())&&!/accessible|protected|daisy|in library|open library|award|prize|premio|\d{4}|fiction, /i.test(s));
+function subjectOf(d,ol){const all=[...(ol.subjects||[]),...(d.subjects||[])],g=d.genre||genreOf(all);
+  const sp=all.find(s=>s.length>3&&s.length<35&&!GENERIC.test(s.trim())&&!genreOf([s])&&!/accessible|protected|daisy|in library|open library|award|prize|premio|\d{4}|fiction|ficci|imaginary|literature|literatura/i.test(s));
   return sp||(g&&GREV[g])||''}
 async function workInfo(it){
   let d={...it};
