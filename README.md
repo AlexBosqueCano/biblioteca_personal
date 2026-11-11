@@ -30,13 +30,22 @@ y abre `http://localhost:8000`.
 
 No hay servidor ni cuentas. Los libros se guardan en el navegador de cada dispositivo, así que no se sincronizan entre ellos. Desde «Perfil» se puede guardar y restaurar una copia de seguridad.
 
-La web publicada recoge estadísticas anónimas de uso (visitas y acciones como añadir o terminar un libro) con [PostHog](https://posthog.com); nunca se envían los títulos ni el contenido de la biblioteca.
+Si la persona lo acepta, la web recoge estadísticas anónimas de uso (visitas y acciones como añadir o terminar un libro) con [PostHog](https://posthog.com); nunca se envían los títulos ni el contenido de la biblioteca.
 
 La información de los libros y las portadas vienen de [Open Library](https://openlibrary.org); las biografías, resúmenes y sagas, de [Wikipedia](https://es.wikipedia.org) y [Wikidata](https://www.wikidata.org).
+
+## Cuentas y sincronización
+
+La cuenta es opcional. Sin cuenta, todo se guarda solo en el dispositivo. Con cuenta (Google o enlace al correo), la biblioteca se guarda también en Supabase (proyecto `biblioteca`, región UE) y se sincroniza entre dispositivos. Cada usuario solo puede leer y modificar sus propios datos (seguridad a nivel de fila en las tablas `books` y `settings`). Si se edita el mismo libro en dos dispositivos, los cambios se mezclan campo a campo.
+
+## Privacidad
+
+Las estadísticas de uso (PostHog) solo se activan si la persona las acepta en el aviso inicial o en «Perfil». La política está en `privacidad.html`.
 
 ## Archivos
 
 - `index.html`: toda la aplicación (HTML, CSS y JavaScript).
+- `privacidad.html`: política de privacidad.
 - `manifest.webmanifest`, `sw.js` e iconos: lo necesario para instalarla y usarla sin conexión.
 - `version.json` y `_headers`: hacen que la app instalada se actualice sola.
 

@@ -1,7 +1,7 @@
 // Cambia VERSION en cada publicación (y también APP_VERSION en index.html y version.json)
-const VERSION='16';
+const VERSION='17';
 const C='biblioteca-v'+VERSION;
-const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const FILES=['./','./index.html','./privacidad.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES.map(f=>new Request(f,{cache:'reload'})))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 self.addEventListener('message',e=>{if(e.data==='skipWaiting')self.skipWaiting()});
