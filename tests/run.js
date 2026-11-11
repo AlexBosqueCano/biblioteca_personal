@@ -116,7 +116,7 @@ function makeEnv(opts = {}) {
   vm.runInContext(app + `
 ;globalThis.__t={get books(){return books},set books(v){books=v},get cfg(){return cfg},set cfg(v){cfg=v},
  get route(){return route},set route(v){route=v},set q(v){q=v},set current(v){current=v},
- get soc(){return soc},cleanSug,showSugPanel,openSuggest,
+ get soc(){return soc},cleanSug,cleanSent,showSugPanel,openSuggest,openReply,
  render,renderBook,save,load,cleanBook,cleanCfg,safeUrl,cloud,cloudSync,mergeBook,getMeta,go,runCat,authorInfo,workInfo,viewAuthor,viewWork,catTile,authorCard,
  get cat(){return cat},set cat(v){cat=v}};`, ctx, { filename: 'app.js' });
   return { t: ctx.__t, written, store, ctx };
@@ -191,6 +191,12 @@ const evilFetch = async (u) => {
   s.sugs = [0, 1, 2, 3].map((i) => t.cleanSug({ id: i + 1, from_name: evil(i), message: evil(i + 1), status: 'new', seen: false, created_at: evil(i + 2),
     book: { title: evil(i + 3), author: evil(i + 4), cover: i % 2 ? 'javascript:alert(1)' : 'https://covers.openlibrary.org/b/id/1-M.jpg"><script>', key: evil(i), genre: evil(i + 5) } }));
   ok(s.sugs.every((x) => !/javascript|<script/.test(x.book.cover)), 'Las portadas de las sugerencias solo pueden ser de Open Library');
+  s.sugs.forEach((x, i) => { x.reaction = i % 2 ? 'love' : ''; x.reply = evil(i + 6); });
+  s.sent = [0, 1, 2, 3].map((i) => t.cleanSent({ id: 10 + i, to_name: evil(i), message: evil(i + 1), status: 'added', seen_at: '2026-11-11', progress: ['want', 'reading', 'read', 'x'][i], rating: 9,
+    progress_at: '2026-11-12', reaction: i % 2 ? 'thanks' : '<script>', reply: evil(i + 2), reply_at: '2026-11-11', final_reaction: 'love', final_reply: evil(i + 3), final_at: i === 2 ? '2026-11-13' : null, fresh: true,
+    book: { title: evil(i + 4), author: evil(i + 5), cover: 'javascript:alert(1)' } }));
+  ok(s.sent.every((x) => x.rating <= 5 && ['', 'thanks', 'love', 'like', 'meh'].includes(x.reaction)), 'Valoraciones y reacciones de amigos saneadas');
+  t.route = { v: 'sugs', id: 'sent' }; t.render(); t.openReply(s.sugs[0], 'final'); t.openReply(s.sugs[1], 'first');
   t.route = { v: 'friends' }; t.render(); t.route = { v: 'sugs' }; t.render(); t.route = { v: 'home' }; t.render(); t.route = { v: 'profile' }; t.render();
   const qs = xctx.document.querySelector; xctx.document.querySelector = (sel) => (sel === 'dialog[open]' ? null : qs(sel));
   t.showSugPanel(); t.openSuggest({ title: evil(6), author: evil(7), cover: 'javascript:alert(1)' });
