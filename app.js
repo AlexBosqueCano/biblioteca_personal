@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='22';let swReg=null,checking=false;
+const APP_VERSION='23';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -913,7 +913,7 @@ addEventListener('appinstalled',()=>{track('app_instalada');$('#bInstall').hidde
 /* ================= Cuenta y sincronización (Supabase) ================= */
 const SB_URL='https://klgdjsvwwoppiuiodcwj.supabase.co',SB_KEY='sb_publishable_x39zAx3NuZ2vuUXqHXAoAg_dYWBEn6H';
 /* Protección anti-bots (Cloudflare Turnstile). Clave pública del widget; vacía = desactivado */
-const TS_KEY='';
+const TS_KEY='0x4AAAAAAF9WJ6TFoRv9euV-';
 let tsP=null,tsId=null,tsWait=null;
 function loadTS(){ if(!TS_KEY)return Promise.resolve(null); if(tsP)return tsP;
   tsP=new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';sc.async=true;sc.onload=()=>ok(window.turnstile);sc.onerror=()=>{tsP=null;ko(new Error('captcha'))};document.head.appendChild(sc)}); return tsP }
