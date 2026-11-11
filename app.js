@@ -130,12 +130,12 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='26';let swReg=null,checking=false;
+const APP_VERSION='27';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
 const GREV={'Fantasía':'fantasy','Ciencia ficción':'science fiction','Misterio':'mystery','Thriller':'thriller','Terror':'horror','Romance':'romance','Histórica':'historical fiction','Poesía':'poetry','Teatro':'drama','Cómic':'graphic novels','Biografía':'biography','Filosofía':'philosophy','Psicología':'psychology','Autoayuda':'self-help','Economía':'economics','Tecnología':'computers','Ciencia':'science','Historia':'history','Viajes':'travel','Ensayo':'essays','Juvenil':'young adult','Clásicos':'classic literature','Novela':'fiction','Ficción':'fiction'};
-const NAV=[['home','🏠','Inicio'],['lib','📚','Biblioteca'],['authors','✍️','Autores'],['quotes','❝','Citas'],['discover','✨','Descubrir'],['profile','👤','Perfil']];
+const NAV=[['home','🏠','Inicio'],['lib','📚','Biblioteca'],['authors','✍️','Autores'],['quotes','❝','Citas'],['discover','✨','Descubrir'],['friends','🤝','Amigos'],['profile','👤','Perfil']];
 const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const MESL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const TRASH='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>';
@@ -512,7 +512,7 @@ function viewWork(){
   <div class="bk wk">${cover(d)}<div class="main">
     <h2>${esc(d.title)}</h2><div class="au">${d.author?`<a data-act="openAuthor" data-n="${esc(d.author)}" data-k="${esc(d.akey||'')}">${esc(d.author)}</a>`:'Autor desconocido'}</div>
     <div class="pills">${date?`<span class="pill">📅 ${esc(date)}</span>`:''}${d.pages?`<span class="pill">${d.pages} págs.</span>`:''}${d.genre?`<span class="pill">${esc(d.genre)}</span>`:''}${own?'<span class="pill st">En tu biblioteca</span>':''}</div>
-    <div class="acts">${own?`<button class="btn small primary" data-open="${own.id}">Abrir mi ficha</button>`:`<button class="btn small primary" data-act="addW" data-w="${id}" data-s="want">＋ Quiero leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="reading">Empezar a leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="read">Ya lo he leído</button>`}</div>
+    <div class="acts">${own?`<button class="btn small primary" data-open="${own.id}">Abrir mi ficha</button>`:`<button class="btn small primary" data-act="addW" data-w="${id}" data-s="want">＋ Quiero leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="reading">Empezar a leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="read">Ya lo he leído</button>`}${cloud.user?`<button class="btn small" data-act="suggestW" data-w="${id}">🎁 Sugerir a un amigo</button>`:''}</div>
     <h4>Resumen</h4><p class="bio" style="margin:0">${c.s==='loading'?'<span class="skel">Buscando información del libro…</span>':w.summary?esc(w.summary)+(w.sumLang!=='es'?' <span class="muted">(en inglés)</span>':'')+(safeUrl(w.wiki)?` <a href="${esc(safeUrl(w.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):'<span class="muted">No se ha encontrado un resumen de este libro.</span>'}</p>
     ${d.author?`<h4>Autor</h4><div style="max-width:520px">${authorCard({name:d.author,key:d.akey||''})}</div>`:''}
   </div></div>${bottom}`;
@@ -600,21 +600,115 @@ function viewProfile(){
       <p class="muted" style="font-size:12px;margin:12px 0 0">Versión ${APP_VERSION} · <a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacidad</a> · <a href="condiciones.html" target="_blank" rel="noopener" style="color:var(--accent)">Aviso legal y condiciones</a></p> ${(cfg.searches||[]).length?'<button class="btn small ghost" data-act="clearSearches">Borrar historial de búsquedas</button>':''}</div></div>
     ${statsHTML()}`;
 }
-const VIEWS={home:viewHome,lib:viewLib,list:viewList,authors:viewAuthors,quotes:viewQuotes,discover:viewDiscover,search:viewSearch,author:viewAuthor,work:viewWork,profile:viewProfile};
+const VIEWS={home:viewHome,lib:viewLib,list:viewList,authors:viewAuthors,quotes:viewQuotes,discover:viewDiscover,search:viewSearch,author:viewAuthor,work:viewWork,profile:viewProfile,friends:viewFriends,sugs:viewSugs};
 function render(anim){
   if(route.v==='list'&&route.id!=='want'&&route.id!=='reread'&&!cfg.lists.some(l=>l.id===route.id)) route={v:'lib'};
   const t=applyTheme();
   renderCloudBtn();
   $('#bTheme').innerHTML=t==='dark'?'<i>☀️</i><span>Tema claro</span>':'<i>🌙</i><span>Tema oscuro</span>';
-  $('#nav').innerHTML=NAV.map(([v,i,l])=>`<button class="navi ${route.v===v?'on':''}" data-nav="${v}"><i>${i}</i><span>${l}</span></button>`).join('');
+  $('#nav').innerHTML=NAV.map(([v,i,l])=>`<button class="navi ${route.v===v?'on':''}" data-nav="${v}"><i>${i}</i><span>${l}</span>${v==='friends'&&soc.incoming.length?`<em class="hot">${soc.incoming.length}</em>`:''}</button>`).join('');
   const li=(id,i,l)=>`<button class="navi ${route.v==='list'&&route.id===id?'on':''}" data-nav="list" data-id="${id}"><i>${i}</i><span>${esc(l)}</span><em>${listBooks(id).length||''}</em></button>`;
-  $('#navLists').innerHTML=li('want','🔖','Próximas lecturas')+li('reread','↻','Para releer')+cfg.lists.map(l=>li(l.id,'📁',l.name)).join('');
+  const nNew=soc.sugs.filter(x=>x.status==='new').length;
+  $('#navLists').innerHTML=li('want','🔖','Próximas lecturas')+li('reread','↻','Para releer')+(cloud.user?`<button class="navi ${route.v==='sugs'?'on':''}" data-nav="sugs"><i>🎁</i><span>Sugerencias de amigos</span><em class="${nNew?'hot':''}">${nNew||soc.sugs.length||''}</em></button>`:'')+cfg.lists.map(l=>li(l.id,'📁',l.name)).join('');
   $('#q').placeholder=ONLINE.includes(route.v)?'Buscar cualquier libro (título, autor…) para añadirlo a tu biblioteca':'Buscar en tu biblioteca por título, autor, género o dentro de tus notas…';
   $('#mHome').classList.toggle('on',route.v==='home');$('#mLib').classList.toggle('on',route.v==='lib');
   const v=$('#view');
   v.innerHTML=VIEWS[route.v]();
   if(anim){v.classList.remove('anim');void v.offsetWidth;v.classList.add('anim')}
   $('#genres').innerHTML=[...new Set([...books.map(b=>b.genre).filter(Boolean),...GENRES])].map(g=>`<option value="${esc(g)}">`).join('');
+}
+
+
+/* ---------- Amigos y sugerencias ----------
+   Todo pasa por funciones del servidor (friend_request, friends_list, suggest_book…), que comprueban permisos.
+   Lo que llega de otras personas se muestra siempre escapado (esc) y las portadas pasan por safeUrl. */
+let soc={friends:[],incoming:[],outgoing:[],sugs:[],ok:false,busy:false,msg:'',shown:new Set()},sugTarget=null;
+function socReset(){soc={friends:[],incoming:[],outgoing:[],sugs:[],ok:false,busy:false,msg:'',shown:new Set()}}
+function cleanSug(x){const b=x&&typeof x.book==='object'&&x.book||{};
+  return {id:+x.id||0,from:String(x.from_name||'Un amigo').slice(0,40),msg:String(x.message||'').slice(0,280),status:['new','added','dismissed'].includes(x.status)?x.status:'new',seen:!!x.seen,date:String(x.created_at||'').slice(0,10),
+    book:{title:String(b.title||'').slice(0,200),author:String(b.author||'').slice(0,120),cover:/^https:\/\/covers\.openlibrary\.org\/[A-Za-z0-9\/_.-]+$/.test(b.cover||'')?String(b.cover):'',key:String(b.key||''),akey:String(b.akey||''),year:String(b.year||''),pages:String(b.pages||'').replace(/\D/g,''),genre:String(b.genre||'').slice(0,40)}}}
+async function socLoad(panel){
+  if(!cloud.user||cloud.needMfa||!cloud.sb||soc.busy)return; soc.busy=true;
+  try{
+    const [f,sg]=await Promise.all([cloud.sb.rpc('friends_list'),cloud.sb.rpc('suggestions_list')]);
+    if(f.error)throw f.error; if(sg.error)throw sg.error;
+    const fl=(f.data||[]).map(r=>({id:+r.id,kind:r.kind,uid:r.user_id||'',name:String(r.name||'').slice(0,40),email:String(r.email||'').slice(0,254),since:String(r.since||'').slice(0,10)}));
+    soc.friends=fl.filter(r=>r.kind==='friend').sort((a,b)=>a.name.localeCompare(b.name));soc.incoming=fl.filter(r=>r.kind==='incoming');soc.outgoing=fl.filter(r=>r.kind==='outgoing');
+    soc.sugs=(sg.data||[]).map(cleanSug).filter(x=>x.id&&x.book.title);soc.ok=true;
+    if(!$('#dlgBook').open&&!$('#dlgForm').open) render();
+    if(panel!==false) showSugPanel();
+  }catch(e){ if(navigator.onLine) window.informarError?.(e,'amigos') }
+  finally{soc.busy=false}
+}
+function showSugPanel(){
+  const nw=soc.sugs.filter(x=>!x.seen&&x.status==='new'&&!soc.shown.has(x.id)); if(!nw.length||document.querySelector('dialog[open]'))return;
+  nw.forEach(x=>soc.shown.add(x.id));
+  const x=nw[0],more=nw.length-1;
+  $('#sugPanel').innerHTML=`<div class="sugp">${cover(x.book)}<div class="sugpt"><div class="kick">🎁 Nueva sugerencia</div>
+    <h2>${esc(x.from)} te recomienda este libro</h2><div class="bt">${esc(x.book.title)}</div>${x.book.author?`<div class="muted">${esc(x.book.author)}</div>`:''}
+    ${x.msg?`<blockquote>«${esc(x.msg)}»</blockquote>`:''}${more?`<p class="muted" style="margin:10px 0 0">y ${pl(more,'sugerencia más','sugerencias más')} de tus amigos</p>`:''}
+    <div class="df" style="justify-content:flex-start"><button class="btn primary" data-act="sugGo">Ver en sugerencias</button><button class="btn ghost" data-act="close">Ahora no</button></div></div></div>`;
+  $('#dlgSug').showModal();
+  cloud.sb.rpc('suggestion_update',{p_ids:nw.map(y=>y.id),p_status:'seen'}).then(()=>nw.forEach(y=>{y.seen=true}),()=>{});
+}
+function needAccount(what){return emptyBox('🤝','Crea tu cuenta para '+what,'Los amigos y las sugerencias funcionan con una cuenta gratuita: así tus amigos pueden encontrarte y enviarte libros.','<button class="btn primary" data-act="login">Crear cuenta o iniciar sesión</button>')}
+function viewFriends(){
+  if(!cloud.user) return `<div class="vh"><h1>Amigos</h1></div>`+needAccount('tener amigos');
+  if(cloud.needMfa) return `<div class="vh"><h1>Amigos</h1></div>`+emptyBox('🔐','Verifica tu acceso','Escribe el código de tu app de autenticación para ver a tus amigos.','<button class="btn primary" data-act="syncNow">Verificar</button>');
+  const row=(r,btns,sub)=>`<div class="frow">${avatar(r.name||r.email,'')}<div class="fi"><b>${esc(r.name||r.email)}</b><span class="muted">${esc(sub)}</span></div><div class="fb">${btns}</div></div>`;
+  const inc=soc.incoming.map(r=>row(r,`<button class="btn small primary" data-act="friendYes" data-id="${r.id}">Aceptar</button><button class="btn small ghost" data-act="friendNo" data-id="${r.id}">Rechazar</button>`,r.email+' quiere ser tu amigo')).join('');
+  const fr=soc.friends.map(r=>row(r,`<button class="btn small ghost" data-act="friendDel" data-id="${r.id}" data-n="${esc(r.name)}">Eliminar</button>`,r.email)).join('');
+  const out=soc.outgoing.map(r=>row({name:'',email:r.email},`<button class="btn small ghost" data-act="friendDel" data-id="${r.id}" data-out="1">Cancelar</button>`,'Solicitud enviada')).join('');
+  return `<div class="vh"><h1>Amigos<small>${pl(soc.friends.length,'amigo')}</small></h1></div>
+  ${cfg.name?'':`<div class="card fadd" style="border-color:color-mix(in srgb,var(--accent) 40%,var(--line))"><b>👋 Pon tu nombre</b><p class="muted" style="margin:4px 0 10px;font-size:14px">Así tus amigos sabrán quién les envía las sugerencias. Si no, verán la primera parte de tu correo.</p><button class="btn small primary" data-nav="profile">Ir a Perfil</button></div>`}
+  <div class="card fadd"><b>Añadir un amigo</b><p class="muted" style="margin:4px 0 12px;font-size:14px">Escribe el correo con el que tu amigo usa Mi biblioteca. Cuando acepte, podréis sugeriros libros.</p>
+    <div class="frm"><input type="email" id="f_email" placeholder="correo@ejemplo.com" maxlength="254" autocomplete="off"><button class="btn primary" data-act="friendAdd">Enviar solicitud</button></div>
+    ${soc.msg?`<p class="fmsg">${esc(soc.msg)}</p>`:''}</div>
+  ${inc?`<div class="sec"><div class="sech"><h2>Solicitudes recibidas</h2></div><div class="flist">${inc}</div></div>`:''}
+  <div class="sec"><div class="sech"><h2>Tus amigos</h2></div>${fr?`<div class="flist">${fr}</div>`:`<div class="dashed">${soc.ok?'Todavía no tienes amigos. Envía una solicitud con su correo.':'Cargando…'}</div>`}</div>
+  ${out?`<div class="sec"><div class="sech"><h2>Solicitudes enviadas</h2></div><div class="flist">${out}</div></div>`:''}
+  ${soc.friends.length?'<p class="muted" style="font-size:14px">Para sugerir un libro, abre su ficha y pulsa «🎁 Sugerir a un amigo».</p>':''}`;
+}
+function viewSugs(){
+  if(!cloud.user) return `<div class="vh"><h1>Sugerencias de amigos</h1></div>`+needAccount('recibir sugerencias');
+  const l=soc.sugs;
+  if(!l.length) return `<div class="vh"><h1>Sugerencias de amigos</h1></div>`+emptyBox('🎁','Aún no tienes sugerencias','Cuando un amigo te recomiende un libro aparecerá aquí.','<button class="btn" data-nav="friends">Ver mis amigos</button>');
+  return `<div class="vh"><h1>Sugerencias de amigos<small>${pl(l.length,'libro')}</small></h1></div><div class="sugs">${l.map((x,i)=>{const own=inLib(x.book),w=regW(x.book);
+    return `<div class="card sugc ${x.status==='new'?'nw':''}" style="--i:${Math.min(i,24)}"><div data-work="${w}" class="sugcv">${cover(x.book)}</div><div class="sugi">
+      <div class="from">🎁 <b>${esc(x.from)}</b> te lo recomienda${x.date?` · ${fmt(x.date)}`:''}</div>
+      <h3 data-work="${w}">${esc(x.book.title)}</h3>${x.book.author?`<div class="muted">${esc(x.book.author)}</div>`:''}
+      ${x.msg?`<blockquote>«${esc(x.msg)}»</blockquote>`:''}
+      <div class="acts">${own?'<span class="pill st">En tu biblioteca</span>':`<button class="btn small primary" data-act="sugAdd" data-id="${x.id}">＋ Quiero leerlo</button>`}<button class="btn small" data-work="${w}">Ver ficha</button><button class="btn small ghost" data-act="sugDel" data-id="${x.id}">Descartar</button></div>
+    </div></div>`}).join('')}</div>`;
+}
+function openSuggest(book){
+  if(!cloud.user){openLogin();return}
+  sugTarget={title:book.title,author:book.author||'',cover:book.cover||'',key:book.key||'',akey:book.akey||'',year:String(book.year||''),pages:String(book.pages||''),genre:book.genre||''};
+  const fr=soc.friends;
+  $('#suggestBody').innerHTML=`<div class="sgb">${cover(sugTarget)}<div><b>${esc(sugTarget.title)}</b><div class="muted">${esc(sugTarget.author)}</div></div></div>`+
+    (fr.length?`<label>¿A quién se lo recomiendas?</label><div class="pickf">${fr.map((f,i)=>`<label class="pf"><input type="checkbox" name="sgf" value="${esc(f.uid)}" ${fr.length===1?'checked':''}>${avatar(f.name,'')}<span>${esc(f.name)}</span></label>`).join('')}</div>
+      <label for="sg_msg">Mensaje (opcional)</label><textarea id="sg_msg" maxlength="280" placeholder="¿Por qué se lo recomiendas?"></textarea>
+      <div class="df"><button class="btn ghost" data-act="close">Cancelar</button><button class="btn primary" data-act="sugSend">Enviar sugerencia</button></div>`
+    :`<div class="dashed" style="margin-top:14px">Todavía no tienes amigos en Mi biblioteca.</div><div class="df"><button class="btn ghost" data-act="close">Cerrar</button><button class="btn primary" data-act="goFriends">Añadir amigos</button></div>`);
+  $('#dlgSuggest').showModal();
+}
+function rpcErr(e){const m=e?.message||String(e);return /Failed to fetch|NetworkError|Load failed/i.test(m)?'No se ha podido conectar. Comprueba tu conexión.':m.length<120?m:'No se ha podido completar. Inténtalo de nuevo.'}
+async function socAction(act,a){
+  const sb=cloud.sb; if(!sb||!cloud.user)return;
+  try{
+    if(act==='friendAdd'){const e=($('#f_email')?.value||'').trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e)){soc.msg='Escribe un correo válido.';render();return}
+      const {error}=await sb.rpc('friend_request',{p_email:e});if(error)throw error;soc.msg=`Listo. Si ${e} tiene cuenta en Mi biblioteca, le llegará tu solicitud.`;track('amigo_solicitud');await socLoad(false)}
+    else if(act==='friendYes'||act==='friendNo'){const {error}=await sb.rpc('friend_respond',{p_id:+a.dataset.id,p_accept:act==='friendYes'});if(error)throw error;toast(act==='friendYes'?'¡Ahora sois amigos!':'Solicitud rechazada');await socLoad(false)}
+    else if(act==='friendDel'){if(!confirm(a.dataset.out?'¿Cancelar esta solicitud?':`¿Eliminar a ${a.dataset.n||'este amigo'} de tus amigos?`))return;const {error}=await sb.rpc('friend_remove',{p_id:+a.dataset.id});if(error)throw error;await socLoad(false)}
+    else if(act==='sugSend'){const ids=[...document.querySelectorAll('input[name=sgf]:checked')].map(i=>i.value);if(!ids.length){toast('Elige al menos un amigo');return}
+      const msg=($('#sg_msg')?.value||'').trim().slice(0,280);a.disabled=true;
+      for(const id of ids){const {error}=await sb.rpc('suggest_book',{p_to:id,p_book:sugTarget,p_msg:msg});if(error)throw error}
+      $('#dlgSuggest').close();track('sugerencia_enviada',{amigos:ids.length});toast(ids.length>1?`Sugerencia enviada a ${ids.length} amigos`:'Sugerencia enviada')}
+    else if(act==='sugAdd'||act==='sugDel'){const x=soc.sugs.find(y=>y.id===+a.dataset.id);if(!x)return;
+      if(act==='sugAdd'&&!inLib(x.book)){books.push({id:uid(),added:Date.now(),title:x.book.title,author:x.book.author,genre:x.book.genre,pages:x.book.pages,cover:x.book.cover,status:'want',start:'',end:'',rating:0,summary:'',liked:'',notes:[]});save();toast(`«${x.book.title}» añadido a próximas lecturas`)}
+      const st=act==='sugAdd'?'added':'dismissed';const {error}=await sb.rpc('suggestion_update',{p_ids:[x.id],p_status:st});if(error)throw error;
+      if(st==='dismissed'){soc.sugs=soc.sugs.filter(y=>y!==x);toast('Sugerencia descartada')}else x.status='added';render()}
+  }catch(e){const m=rpcErr(e);if(act==='friendAdd'){soc.msg=m;render()}else toast(m);if(a)a.disabled=false}
 }
 
 /* ---------- Sugerencias ---------- */
@@ -671,6 +765,7 @@ function renderBook(){
       ${b.status==='reading'?`<button class="btn small primary" data-act="finish" data-id="${b.id}">Finalizar lectura</button>`:''}
       ${b.status==='want'?'<button class="btn small primary" data-act="start">Empezar a leer</button>':''}
       <button class="btn small" data-act="fullWork">Ficha completa</button>
+      ${cloud.user?'<button class="btn small" data-act="suggestCur">🎁 Sugerir a un amigo</button>':''}
       <button class="btn small" data-act="edit">Editar</button>
       ${!b.cover||!b.author||!b.genre?'<button class="btn small" data-act="auto">Autocompletar ficha</button>':''}
       <button class="btn small danger" data-act="del">Eliminar</button>
@@ -845,6 +940,11 @@ document.addEventListener('click',e=>{
     else if(act==='install'){ if(installEvt){installEvt.prompt();installEvt.userChoice.then(c=>{if(c.outcome==='accepted')$('#bInstall').hidden=true});installEvt=null} else showInstallHelp() }
     else if(act==='restore') $('#restoreFile').click();
     else if(act==='close') a.closest('dialog').close();
+    else if(['friendAdd','friendYes','friendNo','friendDel','sugSend','sugAdd','sugDel'].includes(act)) socAction(act,a);
+    else if(act==='suggestCur'){const b=get(current);if(b){$('#dlgBook').close();openSuggest(b)}}
+    else if(act==='suggestW'){const it=REG[+a.dataset.w];if(it)openSuggest(it)}
+    else if(act==='sugGo'){$('#dlgSug').close();go('sugs')}
+    else if(act==='goFriends'){$('#dlgSuggest').close();go('friends')}
     else if(act==='toastAct'){const f=toastFn;toastFn=null;$('#toast').classList.remove('on');f&&f()}
     else if(act==='theme'){cfg.theme=applyTheme()==='dark'?'light':'dark';save();render()}
     else if(act==='setTheme'){cfg.theme=a.dataset.t==='auto'?'':a.dataset.t;save();render()}
@@ -994,7 +1094,7 @@ function onAuth(u,ev){
     if(ev==='SIGNED_IN') toast('Sesión iniciada. Sincronizando tu biblioteca…');
     checkMfa().then(()=>{ if(!cloud.needMfa) cloudSync(true) });
   }
-  if(!u){cloud.state='off'}
+  if(!u){cloud.state='off';socReset()}
   render();
 }
 function cloudDirty(){ if(!cloud.user)return; clearTimeout(cloud.timer); cloud.timer=setTimeout(()=>cloudSync(),1500) }
@@ -1041,6 +1141,7 @@ async function cloudSync(manual){
     if(cfgJ!==m.cfg){ const {error}=await sb.from('settings').upsert({user_id:uid,data:cfgShared()},{onConflict:'user_id'}); if(error) throw error; m.cfg=cfgJ }
     setMeta(m);
     cloud.state='ok';cloud.last=Date.now();cloud.err='';
+    socLoad();
     if(changedLocal){ render(); if($('#dlgBook').open) renderBook() }
     if(manual===true&&route.v==='profile') toast('Biblioteca sincronizada');
   }catch(e){
@@ -1193,7 +1294,7 @@ async function verifyCode(){
 async function logout(){
   const keep=confirm('¿Mantener tus libros en este dispositivo después de cerrar sesión?\n\nAceptar: se quedan aquí (sin sincronizar).\nCancelar: se borran de este dispositivo (siguen en tu cuenta).');
   await cloudSync(); try{await cloud.sb.auth.signOut()}catch{}
-  cloud.user=null;cloud.mfa=null;cloud.needMfa=false;setMeta(META0());
+  cloud.user=null;cloud.mfa=null;cloud.needMfa=false;setMeta(META0());socReset();
   if(!keep){books=[];cfg={name:'',theme:cfg.theme,goals:{},favs:[],lists:[],searches:[]};try{localStorage.setItem(KEY,'[]');localStorage.setItem(KEY+'.cfg',JSON.stringify(cfg))}catch{}}
   toast('Has cerrado sesión');go('home');
 }

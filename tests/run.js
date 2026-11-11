@@ -116,6 +116,7 @@ function makeEnv(opts = {}) {
   vm.runInContext(app + `
 ;globalThis.__t={get books(){return books},set books(v){books=v},get cfg(){return cfg},set cfg(v){cfg=v},
  get route(){return route},set route(v){route=v},set q(v){q=v},set current(v){current=v},
+ get soc(){return soc},cleanSug,showSugPanel,openSuggest,
  render,renderBook,save,load,cleanBook,cleanCfg,safeUrl,cloud,cloudSync,mergeBook,getMeta,go,runCat,authorInfo,workInfo,viewAuthor,viewWork,catTile,authorCard,
  get cat(){return cat},set cat(v){cat=v}};`, ctx, { filename: 'app.js' });
   return { t: ctx.__t, written, store, ctx };
@@ -169,7 +170,7 @@ const evilFetch = async (u) => {
   return { ok: false, status: 404 };
 };
 (async () => {
-  const { t, written } = makeEnv({ fetch: evilFetch, runTimers: true });
+  const { t, written, ctx: xctx } = makeEnv({ fetch: evilFetch, runTimers: true });
   t.books = badBooks.map((b) => t.cleanBook(b));
   t.cfg = t.cleanCfg({ name: evil(0), lists: [{ id: 'L1', name: evil(1), ids: ['b1'] }], favs: [evil(2)], searches: [{ q: evil(3), author: evil(4) }], goals: { 2026: 10 } });
   const views = [['home'], ['lib'], ['list', 'want'], ['list', 'reread'], ['list', 'L1'], ['authors'], ['quotes'], ['discover'], ['profile']];
@@ -182,6 +183,18 @@ const evilFetch = async (u) => {
   t.route = { v: 'work', it: { title: evil(1), author: evil(2) } }; await new Promise((r) => setTimeout(r, 50)); t.render();
   t.cloud.user = { id: 'u', email: evil(3), user_metadata: { full_name: evil(4), avatar_url: 'javascript:alert(1)' } }; t.cloud.mfa = { on: false };
   t.route = { v: 'profile' }; t.render();
+  // Amigos y sugerencias con datos maliciosos que llegarían de otra persona
+  t.cloud.sb = { rpc: async () => ({ data: [], error: null }) };
+  const s = t.soc;
+  s.friends = [0, 1, 2].map((i) => ({ id: i, kind: 'friend', uid: evil(i), name: evil(i + 1), email: evil(i + 2) }));
+  s.incoming = [{ id: 9, kind: 'incoming', uid: 'x', name: evil(3), email: evil(4) }]; s.outgoing = [{ id: 8, kind: 'outgoing', email: evil(5) }];
+  s.sugs = [0, 1, 2, 3].map((i) => t.cleanSug({ id: i + 1, from_name: evil(i), message: evil(i + 1), status: 'new', seen: false, created_at: evil(i + 2),
+    book: { title: evil(i + 3), author: evil(i + 4), cover: i % 2 ? 'javascript:alert(1)' : 'https://covers.openlibrary.org/b/id/1-M.jpg"><script>', key: evil(i), genre: evil(i + 5) } }));
+  ok(s.sugs.every((x) => !/javascript|<script/.test(x.book.cover)), 'Las portadas de las sugerencias solo pueden ser de Open Library');
+  t.route = { v: 'friends' }; t.render(); t.route = { v: 'sugs' }; t.render();
+  const qs = xctx.document.querySelector; xctx.document.querySelector = (sel) => (sel === 'dialog[open]' ? null : qs(sel));
+  t.showSugPanel(); t.openSuggest({ title: evil(6), author: evil(7), cover: 'javascript:alert(1)' });
+  xctx.document.querySelector = qs;
   const html = written.map((w) => w.html).join('\n');
   ok(written.length > 30 && html.length > 50000, `Se han pintado ${written.length} fragmentos de interfaz`);
   const checks = [

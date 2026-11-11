@@ -346,6 +346,34 @@ textarea{resize:vertical;min-height:76px;line-height:1.45}
   .hero{grid-template-columns:1fr}.reading{grid-template-columns:1fr}
   .bk{flex-direction:column}.bk .cover{width:120px}.note .na{opacity:1}
 }
+
+/* Amigos y sugerencias */
+.navi em.hot{background:var(--accent);color:#fff}
+.fadd{max-width:640px;margin-bottom:8px}.frm{display:flex;gap:10px;flex-wrap:wrap}.frm input{flex:1 1 220px}
+.fmsg{margin:12px 0 0;font-size:14px;color:var(--accent)}
+.flist{display:grid;gap:10px;max-width:640px}
+.frow{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.frow .av{width:44px;height:44px;font-size:16px;flex:none}.fi{flex:1;min-width:0;display:flex;flex-direction:column}.fi b,.fi span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fi span{font-size:13px}
+.fb{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}
+.frow{flex-wrap:wrap}.fi{flex:1 1 150px}
+.sugs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(460px,100%),1fr));gap:16px}.sugs>*{min-width:0}
+.sugc{display:flex;gap:16px;animation:up .4s both;animation-delay:calc(var(--i)*40ms)}.sugc.nw{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.sugcv{flex:none;width:96px;cursor:pointer}.sugi{flex:1;min-width:0}.sugi h3{margin:4px 0 2px;font-size:18px;cursor:pointer}
+.sugi .from{font-size:13px;color:var(--muted)}.sugi .acts{margin-top:12px}
+blockquote{margin:10px 0 0;padding:8px 12px;border-left:3px solid var(--accent);background:var(--soft);border-radius:0 10px 10px 0;font-style:italic;overflow-wrap:anywhere}
+dialog.sugd{width:min(620px,94vw);padding:0;overflow:hidden}
+.sugx{position:absolute;right:14px;top:12px;z-index:2}
+.sugp{display:flex;gap:24px;padding:30px 30px 26px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--card)),var(--card) 60%)}
+.sugp .cover{width:150px;flex:none;box-shadow:0 18px 40px -12px rgba(0,0,0,.45);animation:pop .5s both}
+.sugpt{flex:1;min-width:0}.sugpt .kick{font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em}
+.sugpt h2{font-size:24px;margin:6px 0 10px;line-height:1.2}.sugpt .bt{font-size:18px;font-weight:700}
+@keyframes pop{from{transform:scale(.85) rotate(-4deg);opacity:0}to{transform:none;opacity:1}}
+.sgb{display:flex;gap:12px;align-items:center;margin-bottom:6px}.sgb .cover{width:52px;flex:none}
+.pickf{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.pf{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:99px;padding:5px 12px 5px 5px;cursor:pointer;margin:0;font-weight:500}
+.pf .av{width:28px;height:28px;font-size:11px}.pf input{position:absolute;opacity:0;pointer-events:none}
+.pf:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+@media (max-width:640px){.sugp{flex-direction:column;align-items:center;text-align:center;padding:28px 20px 22px}.sugp .cover{width:130px}.sugp .df{justify-content:center!important}.sugcv{width:76px}}
 </style>
 
 </head>
@@ -471,6 +499,14 @@ textarea{resize:vertical;min-height:76px;line-height:1.45}
       </div>
     </div>
   </form>
+</dialog>
+<dialog id="dlgSug" class="sugd">
+  <button class="x sugx" data-act="close" aria-label="Cerrar">×</button>
+  <div id="sugPanel"></div>
+</dialog>
+<dialog id="dlgSuggest" class="mini">
+  <div class="dh"><h2>Sugerir a un amigo</h2><button class="x" data-act="close">×</button></div>
+  <div class="db" id="suggestBody"></div>
 </dialog>
 <dialog id="dlgInstall" class="mini">
   <div class="dh"><h2>Instalar la aplicación</h2><button class="x" data-act="close">×</button></div>
