@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='24';let swReg=null,checking=false;
+const APP_VERSION='25';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -414,11 +414,12 @@ async function authorInfo(name,key){
   if(!w)try{w=await wikiFind(name+' escritor',ok,'es')}catch{}
   /* 3) Si solo aparece en inglés, se salta a su versión en español a través de Wikidata */
   if(!w)try{const en=await wikiFind(name+' writer',ok,'en');if(en){w=(en.wikibase_item&&await esFromQid(en.wikibase_item).catch(()=>null))||en}}catch{}
-  let works=[];
-  try{works=dedupe(await olq(key?`author_key=${encodeURIComponent(key)}&sort=already_read`:`author=${encodeURIComponent(name)}&sort=already_read`,30)).slice(0,10)}catch{}
+  let all=[];
+  try{all=dedupe(await olq(key?`author_key=${encodeURIComponent(key)}&sort=already_read`:`author=${encodeURIComponent(name)}&sort=already_read`,40))}catch{}
+  const works=all.slice(0,10);
   const ph=(ol.photos||[]).find(x=>x>0);
   return {name,key,desc:w?.description||'',bio:short(w?.extract||txt(ol.bio),520),bioLang:w?(w.lang||'es'):'en',wiki:w?.content_urls?.desktop?.page||'',
-    photo:w?.thumbnail?.source||(ph?`https://covers.openlibrary.org/a/id/${ph}-L.jpg`:(key?olAuthorPhoto(key):'')),birth:ol.birth_date||'',death:ol.death_date||'',works};
+    photo:w?.thumbnail?.source||(ph?`https://covers.openlibrary.org/a/id/${ph}-L.jpg`:(key?olAuthorPhoto(key):'')),birth:ol.birth_date||'',death:ol.death_date||'',works,all};
 }
 async function sagaOf(qid,author){
   const c=await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${qid}&property=P179&format=json&origin=*`);
@@ -459,6 +460,31 @@ async function workInfo(it){
   if(!saga) similar=await similarTo(d,ol);
   return {d,summary:short(w?.extract||txt(ol.description),900),sumLang:w?(w.lang||'es'):'en',wiki:w?.content_urls?.desktop?.page||'',date:ol.first_publish_date||d.year||'',saga,similar};
 }
+/* Libros del autor que aún no tienes, ordenados según tus gustos:
+   géneros que más lees y valoras + temas de los libros de este autor que te han gustado + popularidad */
+function tasteGenres(){
+  const G={};
+  for(const b of books){ if(!b.genre)continue;
+    const w=b.status==='read'?(b.rating?b.rating-2.5:1):b.status==='reading'?1:0.5;
+    G[b.genre]=(G[b.genre]||0)+w }
+  return G;
+}
+function authorPicks(a){
+  const all=a.all||[]; if(!all.length) return {list:[],why:[]};
+  const ownT=new Set(books.map(b=>norm(b.title))),G=tasteGenres(),S={};
+  const ok=s=>s.length>3&&s.length<40&&!GENERIC.test(s)&&!/fiction|ficci|literat|\d{4}|award|prize|premio|in library|accessible|protected|daisy|open library/i.test(s);
+  for(const x of all){ if(!ownT.has(norm(x.title)))continue;
+    const b=books.find(y=>norm(y.title)===norm(x.title)); const w=b?.rating>=4?2:(b?.rating&&b.rating<=2?-1.5:1);
+    for(const sub of x.subjects||[]){const k=norm(sub);if(ok(k))S[k]=(S[k]||0)+w} }
+  const shown=new Set((a.works||[]).map(x=>norm(x.title)));
+  const scored=all.map((x,i)=>{ if(ownT.has(norm(x.title))||!x.cover) return null;
+    const sub=(x.subjects||[]).reduce((t,y)=>t+(S[norm(y)]||0),0);
+    return {x,score:(G[x.genre]||0)*1.2+Math.min(sub,8)*0.7+(all.length-i)/all.length*1.5,shown:shown.has(norm(x.title))} }).filter(Boolean);
+  let list=scored.filter(o=>!o.shown).sort((p,q)=>q.score-p.score).slice(0,10).map(o=>o.x);
+  if(list.length<3) list=scored.sort((p,q)=>q.score-p.score).slice(0,10).map(o=>o.x);
+  const why=Object.entries(G).filter(([,v])=>v>0).sort((p,q)=>q[1]-p[1]).slice(0,2).map(([g])=>g);
+  return {list,why};
+}
 function viewAuthor(){
   const {name,key}=route,c=cached('a:'+norm(name)+'|'+(key||''),()=>authorInfo(name,key)),a=c.d||{};
   const mine=books.filter(b=>norm(b.author)===norm(name)),readN=mine.filter(b=>b.status==='read').length,fav=cfg.favs.includes(norm(name));
@@ -470,8 +496,10 @@ function viewAuthor(){
     <div class="acts2">${readN?`<button class="btn primary" data-act="authorBooks" data-k="${esc(norm(name))}" data-s="read">📚 Ver mis ${pl(readN,'libro leído','libros leídos')}</button>`:mine.length?`<button class="btn primary" data-act="authorBooks" data-k="${esc(norm(name))}" data-s="all">📚 Ver sus ${pl(mine.length,'libro')} en mi biblioteca</button>`:''}
       <button class="btn ${fav?'':'ghost'}" data-act="fav" data-k="${esc(norm(name))}">${fav?'♥ Favorito':'♡ Marcar como favorito'}</button></div></div></div>
   <p class="bio">${c.s==='loading'?'<span class="skel">Buscando su biografía…</span>':a.bio?esc(a.bio)+(a.bioLang!=='es'?' <span class="muted">(en inglés)</span>':'')+(safeUrl(a.wiki)?` <a href="${esc(safeUrl(a.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):'<span class="muted">No se ha encontrado una biografía.</span>'}</p>
+  ${mine.length?`<div class="sec"><div class="sech"><h2>${readN?'Los que has leído':'En tu biblioteca'}</h2></div><div class="hrow">${[...mine].sort((x,y)=>(x.status==='read'?0:1)-(y.status==='read'?0:1)||(y.end||'').localeCompare(x.end||'')).map((b,i)=>tile(b,i)).join('')}</div></div>`:''}
   <div class="sec"><div class="sech"><h2>Sus libros más conocidos</h2></div>${works}</div>
-  ${mine.length?`<div class="sec"><div class="sech"><h2>En tu biblioteca</h2></div><div class="hrow">${mine.map((b,i)=>tile(b,i)).join('')}</div></div>`:''}`;
+  ${(()=>{if(c.s!=='ok')return '';const p=authorPicks(a);if(!p.list.length)return '';
+    return `<div class="sec"><div class="sech"><h2>Te pueden gustar</h2></div><p class="muted" style="margin:-6px 0 12px;font-size:14px">${mine.length?'Elegidos a partir de lo que has leído de '+esc(name):'Libros suyos que aún no tienes'}${p.why.length?' y de tus géneros favoritos ('+esc(p.why.join(', '))+')':''}.</p><div class="hrow">${p.list.map((it,i)=>catTile(it,i)).join('')}</div></div>`})()}`;
 }
 function viewWork(){
   const it=route.it||{},c=cached('w:'+(it.key||norm(it.title+'|'+it.author)),()=>workInfo(it)),w=c.d||{},d=w.d||it;
