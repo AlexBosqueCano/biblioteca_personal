@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='19';let swReg=null,checking=false;
+const APP_VERSION='20';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -838,8 +838,10 @@ document.addEventListener('click',e=>{
     else if(act==='sendMail'){sendMagic()}
     else if(act==='verifyCode'){verifyCode()}
     else if(act==='loginBack'){loginState={step:'start'};renderLogin()}
+    else if(act==='haveCode'){const email=($('#l_email')?.value||'').trim();if(!/^\S+@\S+\.\S+$/.test(email)){loginState={step:'start',email,err:'Escribe primero tu correo.'}}else loginState={step:'code',email};renderLogin()}
     else if(act==='syncNow'){if(cloud.needMfa){mfaState={step:'challenge'};renderMfa();$('#dlgMfa').showModal()}else cloudSync(true)}
     else if(act==='mfaOn'){mfaEnroll()}
+    else if(act==='mfaCopy'){navigator.clipboard?.writeText(mfaState.secret||'').then(()=>toast('Clave copiada'),()=>toast('No se ha podido copiar'))}
     else if(act==='mfaOff'){mfaDisable()}
     else if(act==='mfaVerify'){mfaVerify()}
     else if(act==='mfaCancel'){$('#dlgMfa').close();toast('Sin verificar no se sincroniza. Puedes hacerlo desde Perfil.')}
@@ -1036,8 +1038,9 @@ function renderMfa(){
   if(s.step==='enroll'){
     $('#mfaTitle').textContent='Activar verificación en dos pasos';
     $('#mfaBody').innerHTML=`<ol style="margin:0;padding-left:20px;line-height:1.6;font-size:15px"><li>Abre una app de autenticación (Google Authenticator, Microsoft Authenticator, 1Password…).</li><li>Escanea este código QR o escribe la clave.</li><li>Escribe el código que te muestre.</li></ol>
-      <div style="text-align:center;margin:16px 0"><img src="${esc(safeImg(s.qr))}" alt="Código QR" width="200" height="200" style="background:#fff;border-radius:12px;padding:8px"></div>
-      <p class="muted" style="font-size:13px;margin:0 0 4px;text-align:center">Clave: <code style="user-select:all;word-break:break-all">${esc(s.secret)}</code></p>
+      ${s.qr?`<div style="text-align:center;margin:16px 0"><img src="${esc(safeImg(s.qr))}" alt="Código QR" width="200" height="200" style="background:#fff;border-radius:12px;padding:8px"></div>`:''}
+      ${s.uri?`<p style="text-align:center;margin:${s.qr?'0':'16px'} 0 12px"><a class="btn small primary" href="${esc(s.uri)}">📲 Añadir a mi app de autenticación</a><br><span class="muted" style="font-size:12px">Si usas este mismo móvil, pulsa aquí en vez de escanear.</span></p>`:''}
+      <p class="muted" style="font-size:13px;margin:0 0 4px;text-align:center">Clave: <code style="user-select:all;word-break:break-all">${esc(s.secret)}</code> <button class="btn small ghost" data-act="mfaCopy" style="padding:2px 10px">Copiar</button></p>
       <p class="muted" style="font-size:12px;margin:0;text-align:center">Guárdala en un sitio seguro: si pierdes el móvil, la necesitarás para recuperar el acceso.</p>
       ${codeIn}${err}<div class="df"><button class="btn ghost" data-act="close">Cancelar</button><button class="btn primary" data-act="mfaVerify" ${s.busy?'disabled':''}>${s.busy?'Comprobando…':'Activar'}</button></div>`;
   } else {
@@ -1047,12 +1050,16 @@ function renderMfa(){
   }
   setTimeout(()=>$('#m_code')?.focus(),50);
 }
+/* El QR llega como SVG sin codificar; lo pasamos a base64 para que se vea en todos los navegadores (también Safari) */
+function qrDataUrl(q){ try{ if(typeof q!=='string')return ''; let svg=q.startsWith('data:')?q.slice(q.indexOf(',')+1):q; if(/;base64,/i.test(q.slice(0,q.indexOf(',')+1)))return safeImg(q);
+  try{svg=decodeURIComponent(svg)}catch{} if(!/<svg[\s>]/i.test(svg))return ''; return safeImg('data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svg)))) }catch{return ''} }
+function otpUri(u){ return typeof u==='string'&&/^otpauth:\/\/totp\/[^\s"'<>]+$/i.test(u)&&u.length<1000?u:'' }
 async function mfaEnroll(){
   try{
     const f=await cloud.sb.auth.mfa.listFactors();
     for(const x of (f.data?.all||[])) if(x.status!=='verified') await cloud.sb.auth.mfa.unenroll({factorId:x.id});
     const {data,error}=await cloud.sb.auth.mfa.enroll({factorType:'totp',friendlyName:'Mi biblioteca '+Date.now().toString(36)});if(error)throw error;
-    mfaState={step:'enroll',factorId:data.id,qr:data.totp.qr_code,secret:data.totp.secret};renderMfa();$('#dlgMfa').showModal();
+    mfaState={step:'enroll',factorId:data.id,qr:qrDataUrl(data.totp.qr_code),uri:otpUri(data.totp.uri),secret:data.totp.secret};renderMfa();$('#dlgMfa').showModal();
   }catch(e){toast('No se ha podido activar: '+(e?.message||e))}
 }
 async function mfaVerify(){
@@ -1083,25 +1090,29 @@ function accountCard(){
 }
 
 /* ----- Diálogo de acceso ----- */
-function openLogin(){ loginState={step:'start'}; renderLogin(); $('#dlgLogin').showModal(); loadSB().catch(()=>{ loginState={step:'start',err:'No se ha podido conectar. Comprueba tu conexión a internet.'}; renderLogin() }) }
+let googleOn=null;
+/* Preguntamos a Supabase si el acceso con Google está activado, para no enseñar un botón que daría error */
+function checkGoogle(){ if(googleOn!==null)return; fetch(SB_URL+'/auth/v1/settings',{headers:{apikey:SB_KEY}}).then(r=>r.ok?r.json():null).then(j=>{googleOn=!!j?.external?.google; if($('#dlgLogin').open&&loginState.step==='start')renderLogin()}).catch(()=>{}) }
+function openLogin(){ loginState={step:'start'}; checkGoogle(); renderLogin(); $('#dlgLogin').showModal(); loadSB().catch(()=>{ loginState={step:'start',err:'No se ha podido conectar. Comprueba tu conexión a internet.'}; renderLogin() }) }
 function renderLogin(){
   const s=loginState,legal=`<p class="legal">Al continuar aceptas que guardemos tu correo y tu biblioteca para darte el servicio. Más detalles en la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>`;
   const err=s.err?`<p style="color:var(--danger);font-size:14px;margin:12px 0 0">${esc(s.err)}</p>`:'';
   if(s.step==='code'){
-    $('#loginBody').innerHTML=`<p style="margin:0 0 6px">Te hemos enviado un correo a <b>${esc(s.email)}</b>.</p><p class="muted" style="margin:0;font-size:14px">Pulsa el enlace del correo o escribe aquí el código de 6 dígitos si viene uno.</p>
+    $('#loginBody').innerHTML=`<p style="margin:0 0 6px">Te hemos enviado un correo a <b>${esc(s.email)}</b>.</p><p class="muted" style="margin:0;font-size:14px">${isStandalone()?'Escribe aquí el <b>código de 6 dígitos</b> que viene en el correo. No pulses el enlace: se abriría en el navegador y no en esta app.':'Escribe aquí el <b>código de 6 dígitos</b> del correo, o pulsa el enlace del correo desde este mismo dispositivo.'}</p>
       <label for="l_code">Código</label><input type="text" id="l_code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" class="otp" placeholder="······">${err}
       <div class="df"><button class="btn ghost" data-act="loginBack">Usar otro correo</button><button class="btn primary" data-act="verifyCode" ${s.busy?'disabled':''}>${s.busy?'Comprobando…':'Entrar'}</button></div>`;
     setTimeout(()=>$('#l_code')?.focus(),50);return;
   }
   $('#loginBody').innerHTML=`<p class="muted" style="margin:0 0 16px;font-size:14px">Guarda tu biblioteca en la nube y úsala en todos tus dispositivos. Los libros que ya tienes aquí se suben a tu cuenta.</p>
-    <button class="gbtn" data-act="google"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuar con Google</button>
-    <div class="orline">o con tu correo</div>
+    ${googleOn?`<button class="gbtn" data-act="google"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuar con Google</button>
+    <div class="orline">o con tu correo</div>`:''}
     <input type="email" id="l_email" placeholder="tu@correo.com" autocomplete="email" value="${esc(s.email||'')}">${err}
-    <div class="df" style="margin-top:14px"><button class="btn primary" data-act="sendMail" ${s.busy?'disabled':''}>${s.busy?'Enviando…':'Enviarme un enlace'}</button></div>${legal}`;
+    <div class="df" style="margin-top:14px"><button class="btn primary" data-act="sendMail" ${s.busy?'disabled':''}>${s.busy?'Enviando…':'Enviarme un código'}</button></div><p style="text-align:right;margin:8px 0 0"><button class="btn small ghost" data-act="haveCode">Ya tengo un código</button></p>${legal}`;
 }
 function authErr(e){const m=e?.message||String(e);
   if(/not authorized/i.test(m)) return 'El envío de correos todavía no está activado para todo el mundo. Usa «Continuar con Google» o inténtalo más adelante.';
-  if(/rate|too many|security purposes/i.test(m)) return 'Has pedido varios correos seguidos. Espera un minuto y vuelve a intentarlo.';
+  if(/security purposes|after \d+ seconds/i.test(m)) return 'Acabas de pedir un correo. Espera un minuto antes de pedir otro.';
+  if(/rate|too many/i.test(m)) return 'Se ha alcanzado el límite de correos por hora. Espera un rato (como mucho una hora) y vuelve a intentarlo. Si ya te llegó un correo antes, puedes usar su código o su enlace mientras no haya caducado.';
   if(/invalid|expired/i.test(m)) return 'El código no es correcto o ha caducado. Pide uno nuevo.';
   if(/provider is not enabled|Unsupported provider/i.test(m)) return 'El acceso con Google todavía no está activado. Prueba con tu correo.';
   if(/fetch|network|net/i.test(m)) return 'No hay conexión. Comprueba tu internet.';
@@ -1117,7 +1128,7 @@ async function sendMagic(){
 async function verifyCode(){
   const token=($('#l_code').value||'').replace(/\D/g,''); if(token.length<6){loginState={...loginState,err:'Escribe el código completo.'};renderLogin();return}
   loginState={...loginState,busy:true,err:''};renderLogin();
-  try{const {error}=await cloud.sb.auth.verifyOtp({email:loginState.email,token,type:'email'});if(error)throw error}
+  try{const sb=await loadSB();const {error}=await sb.auth.verifyOtp({email:loginState.email,token,type:'email'});if(error)throw error}
   catch(e){loginState={...loginState,busy:false,err:authErr(e)};renderLogin()}
 }
 async function logout(){
