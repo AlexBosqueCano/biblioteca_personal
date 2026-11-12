@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='35';let swReg=null,checking=false;
+const APP_VERSION='36';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -432,6 +432,8 @@ async function toES(text){
   try{localStorage.setItem(TRK,JSON.stringify(st))}catch{}
   return es;
 }
+/* ¿Es una descripción de verdad o solo una lista de títulos? (al menos 12 palabras y frases de 5+ palabras de media) */
+function realText(t){const w=String(t||'').split(/\s+/).filter(Boolean),f=String(t||'').split(/[.!?]+/).filter(x=>x.trim());return w.length>=12&&w.length/Math.max(1,f.length)>=5}
 const STOPW=new Set(['the','and','los','las','del','una','para','with','from','that','este','esta']);
 async function gbES(title,author){ // descripción escrita en español (ediciones españolas en Google Books)
   const q=encodeURIComponent(`${title} ${author||''}`.trim());
@@ -465,7 +467,8 @@ async function authorInfo(name,key){
   const works=all.slice(0,10);
   const ph=(ol.photos||[]).find(x=>x>0);
   let bio=short(w?.extract||txt(ol.bio),520),bioLang=w?(w.lang||'es'):'en',desc=w?.description||'',auto=false;
-  if(bio&&bioLang!=='es')try{bio=short(await toES(bio),560);bioLang='es';auto=true}catch{}
+  if(bio&&bioLang!=='es'&&!realText(bio)) bio='';
+  else if(bio&&bioLang!=='es')try{bio=short(await toES(bio),560);bioLang='es';auto=true}catch{}
   if(desc&&w&&w.lang&&w.lang!=='es')try{desc=await toES(desc)}catch{}
   return {name,key,desc,bio,bioLang,auto,wiki:w?.content_urls?.desktop?.page||'',
     photo:w?.thumbnail?.source||(ph?`https://covers.openlibrary.org/a/id/${ph}-L.jpg`:(key?olAuthorPhoto(key):'')),birth:ol.birth_date||'',death:ol.death_date||'',works,all};
@@ -511,6 +514,7 @@ async function workInfo(it){
   let summary=short(w?.extract||txt(ol.description),900),sumLang=w?(w.lang||'es'):'en',auto=false,gb=null;
   if(!w||sumLang!=='es'){try{gb=await gbES(d.title,d.author)}catch{}
     if(gb){summary=short(gb.desc,900);sumLang='es'}
+    else if(summary&&!realText(summary)) summary='';
     else if(summary)try{summary=short(await toES(summary),960);sumLang='es';auto=true}catch{}}
   const hasES=(d.langs||[]).includes('spa')||!!gb||(w&&w.lang==='es');
   const onlyEN=!hasES&&(d.langs||[]).length?((d.langs||[]).includes('eng')?'en':'otro'):'';
