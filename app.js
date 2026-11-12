@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='40';let swReg=null,checking=false;
+const APP_VERSION='41';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -574,11 +574,11 @@ function viewAuthor(){
   <div class="ahead">${avatar(name,a.photo||(key?olAuthorPhoto(key):''),'xl')}<div style="flex:1;min-width:240px"><h1>${esc(name)}</h1>
     <div class="sub">${esc([a.desc,dates].filter(Boolean).join(' · '))}</div>
     <div class="acts2">${readN?`<button class="btn primary" data-act="authorBooks" data-k="${esc(norm(name))}" data-s="read">📚 Ver mis ${pl(readN,'libro leído','libros leídos')}</button>`:mine.length?`<button class="btn primary" data-act="authorBooks" data-k="${esc(norm(name))}" data-s="all">📚 Ver sus ${pl(mine.length,'libro')} en mi biblioteca</button>`:''}
-      <button class="btn ${fav?'':'ghost'}" data-act="fav" data-k="${esc(norm(name))}">${fav?'♥ Favorito':'♡ Marcar como favorito'}</button></div></div></div>
+      <button class="btn ${fav?'':'ghost'}" data-act="fav" data-k="${esc(norm(name))}">${fav?'♥ Favorito':'♡ Marcar como favorito'}</button>
+      ${c.s==='ok'&&(a.total||0)>(a.works||[]).length?`<button class="btn ghost" data-act="authorAll">📖 Ver todos sus libros <span class="muted">(${a.total})</span></button>`:''}</div></div></div>
   <p class="bio">${c.s==='loading'?'<span class="skel">Buscando su biografía…</span>':a.bio?esc(a.bio)+(a.bioLang!=='es'?' <span class="muted">(en inglés)</span>':a.auto?' <span class="muted">(traducido automáticamente)</span>':'')+(safeUrl(a.wiki)?` <a href="${esc(safeUrl(a.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):'<span class="muted">No se ha encontrado una biografía.</span>'}</p>
   ${mine.length?`<div class="sec"><div class="sech"><h2>${readN?'Los que has leído':'En tu biblioteca'}</h2></div><div class="hrow">${[...mine].sort((x,y)=>(x.status==='read'?0:1)-(y.status==='read'?0:1)||(y.end||'').localeCompare(x.end||'')).map((b,i)=>tile(b,i)).join('')}</div></div>`:''}
-  <div class="sec"><div class="sech"><h2>Sus libros más conocidos</h2></div>${works}
-    ${c.s==='ok'&&!route.all&&(a.total||0)>(a.works||[]).length?`<div style="margin-top:18px"><button class="btn" data-act="authorAll">📖 Ver todos sus libros <span class="muted">(${a.total} en el catálogo)</span></button></div>`:''}</div>
+  <div class="sec"><div class="sech"><h2>Sus libros más conocidos</h2></div>${works}</div>
   ${c.s==='ok'&&route.all?authorAllSec(name,a):''}
   ${(()=>{if(c.s!=='ok')return '';const p=authorPicks(a);if(!p.list.length)return '';
     return `<div class="sec"><div class="sech"><h2>Te pueden gustar</h2></div><p class="muted" style="margin:-6px 0 12px;font-size:14px">${mine.length?'Elegidos a partir de lo que has leído de '+esc(name):'Libros suyos que aún no tienes'}${p.why.length?' y de tus géneros favoritos ('+esc(p.why.join(', '))+')':''}.</p><div class="hrow">${p.list.map((it,i)=>catTile(it,i)).join('')}</div></div>`})()}`;
@@ -1130,7 +1130,7 @@ document.addEventListener('click',e=>{
     else if(act==='suggestCur'){const b=get(current);if(b){$('#dlgBook').close();openSuggest(b)}}
     else if(act==='suggestOwn'){const b=get(a.dataset.id);if(b)openSuggest(b)}
     else if(act==='sugGo'){$('#dlgSug').close();go('sugs')}
-    else if(act==='authorAll'){route.all=true;route.pages=1;track('autor_todos');render();setTimeout(()=>$('#authAll')?.scrollIntoView({behavior:'smooth',block:'start'}),60)}
+    else if(act==='authorAll'){if(!route.all){route.all=true;route.pages=1}track('autor_todos');render();setTimeout(()=>$('#authAll')?.scrollIntoView({behavior:'smooth',block:'start'}),60)}
     else if(act==='authorMore'){route.pages=(route.pages||1)+1;render()}
     else if(act==='authorSort'){route.asort=a.dataset.s;render()}
     else if(act==='authorAllHide'){route.all=false;render()}
