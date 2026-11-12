@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='32';let swReg=null,checking=false;
+const APP_VERSION='33';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -320,7 +320,7 @@ function viewHome(){
     ${row('Sugerencias por tus últimas lecturas','<a data-nav="discover">Ver más →</a>',sgRow('read',sugMsg('read')))}`;
 }
 function sugMsg(kind){return sug.state==='loading'?'Buscando libros que te puedan gustar…':sug.state==='error'?'No se han podido cargar las sugerencias (hace falta conexión a internet).':kind==='search'&&(cfg.searches||[]).length?'No he encontrado libros nuevos para tus búsquedas recientes. Prueba a buscar otro autor o libro.':kind==='search'?'Busca cualquier libro desde el buscador de arriba y aquí te propondré otros parecidos a lo que buscas.':'Añade algunos libros con autor o género y aquí aparecerán recomendaciones basadas en tus últimas lecturas.'}
-function catTile(it,i=0){const w=regW(it),own=inLib(it);return `<div class="tile ${it.here?'here':''}" data-work="${w}" style="--i:${Math.min(i,24)}"><div class="cvw">${cover(it)}${own?'':`<div class="tact"><button class="ib add" data-act="addW" data-w="${w}" data-s="want" title="Añadir a próximas lecturas">＋</button></div>`}</div>
+function catTile(it,i=0){const w=regW(it),own=inLib(it);return `<div class="tile ${it.here?'here':''}" data-work="${w}" style="--i:${Math.min(i,24)}"><div class="cvw">${cover(it)}${(it.langs||[]).length&&!it.langs.includes('spa')&&it.langs.includes('eng')?'<span class="lbadge" title="Solo en inglés">EN</span>':''}${own?'':`<div class="tact"><button class="ib add" data-act="addW" data-w="${w}" data-s="want" title="Añadir a próximas lecturas">＋</button></div>`}</div>
   <div class="t">${esc(it.title)}</div><div class="a">${esc([it.author,it.year].filter(Boolean).join(' · '))}</div>${it.here?'<div class="tag">Este libro</div>':own?'<div class="tag">✓ En tu biblioteca</div>':`<button class="btn small" style="margin-top:8px" data-act="addW" data-w="${w}" data-s="want">＋ Quiero leerlo</button>`}</div>`}
 const sugTile=(it,gi,ii,i)=>catTile(it,i);
 function viewDiscover(){
@@ -411,6 +411,36 @@ async function esFromQid(q){
   const t=e.entities?.[q]?.sitelinks?.eswiki?.title; if(!t) return null;
   const d=await wikiSum(t,'es'); return d&&d.type==='standard'?d:null;
 }
+/* ---------- Todo en español ----------
+   1) se busca un texto escrito en español (Wikipedia ES, Google Books en español);
+   2) si solo existe en inglés, se traduce con el traductor de la propia web (/api/traducir, Workers AI)
+      y se guarda en este dispositivo para no volver a pedirlo. */
+const TRK='biblioteca.tr';let TR=null;
+function trStore(){if(!TR){try{TR=JSON.parse(localStorage.getItem(TRK)||'{}')}catch{TR={}}}return TR}
+function hashT(t){let h=5381;for(let i=0;i<t.length;i++)h=(h*33^t.charCodeAt(i))>>>0;return h.toString(36)+t.length}
+async function toES(text){
+  text=String(text||'').replace(/\s+/g,' ').trim(); if(!text) return '';
+  const st=trStore(),k=hashT(text); if(st[k]) return st[k];
+  const r=await fetch('/api/traducir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text.slice(0,2400)})});
+  if(!r.ok) throw new Error('traducir '+r.status);
+  const es=String((await r.json()).es||'').slice(0,4000); if(!es) throw new Error('vacío');
+  st[k]=es; const keys=Object.keys(st); if(keys.length>400) delete st[keys[0]];
+  try{localStorage.setItem(TRK,JSON.stringify(st))}catch{}
+  return es;
+}
+const STOPW=new Set(['the','and','los','las','del','una','para','with','from','that','este','esta']);
+async function gbES(title,author){ // descripción escrita en español (ediciones españolas en Google Books)
+  const q=encodeURIComponent(`${title} ${author||''}`.trim());
+  const r=await getJSON(`https://www.googleapis.com/books/v1/volumes?q=${q}&langRestrict=es&printType=books&maxResults=8&fields=items(volumeInfo(title,authors,description,language))`);
+  const last=norm(author||'').split(' ').pop(),tw=norm(title).split(' ').filter(w=>w.length>3&&!STOPW.has(w));
+  for(const it of r.items||[]){const v=it.volumeInfo||{};
+    if(v.language!=='es'||!v.description||v.description.length<80)continue;
+    if(last&&!norm((v.authors||[]).join(' ')).includes(last))continue;
+    const vt=norm(v.title||'');if(tw.length&&!tw.some(w=>vt.includes(w)))continue;
+    return {desc:txt(v.description),title:v.title||''};
+  }
+  return null;
+}
 async function authorInfo(name,key){
   if(!key){try{const r=await getJSON(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(name)}&limit=6`);const nn=norm(name),docs=r.docs||[];
     const best=docs.filter(d=>norm(d.name)===nn).sort((a,b)=>(b.work_count||0)-(a.work_count||0))[0]||docs.sort((a,b)=>(b.work_count||0)-(a.work_count||0))[0];key=best?.key||''}catch{}}
@@ -430,7 +460,10 @@ async function authorInfo(name,key){
   try{all=dedupe(await olq(key?`author_key=${encodeURIComponent(key)}&sort=already_read`:`author=${encodeURIComponent(name)}&sort=already_read`,40))}catch{}
   const works=all.slice(0,10);
   const ph=(ol.photos||[]).find(x=>x>0);
-  return {name,key,desc:w?.description||'',bio:short(w?.extract||txt(ol.bio),520),bioLang:w?(w.lang||'es'):'en',wiki:w?.content_urls?.desktop?.page||'',
+  let bio=short(w?.extract||txt(ol.bio),520),bioLang=w?(w.lang||'es'):'en',desc=w?.description||'',auto=false;
+  if(bio&&bioLang!=='es')try{bio=short(await toES(bio),560);bioLang='es';auto=true}catch{}
+  if(desc&&w&&w.lang&&w.lang!=='es')try{desc=await toES(desc)}catch{}
+  return {name,key,desc,bio,bioLang,auto,wiki:w?.content_urls?.desktop?.page||'',
     photo:w?.thumbnail?.source||(ph?`https://covers.openlibrary.org/a/id/${ph}-L.jpg`:(key?olAuthorPhoto(key):'')),birth:ol.birth_date||'',death:ol.death_date||'',works,all};
 }
 async function sagaOf(qid,author){
@@ -470,7 +503,14 @@ async function workInfo(it){
   let saga=null;if(w?.wikibase_item)try{saga=await sagaOf(w.wikibase_item,d.author)}catch{}
   let similar=[];
   if(!saga) similar=await similarTo(d,ol);
-  return {d,summary:short(w?.extract||txt(ol.description),900),sumLang:w?(w.lang||'es'):'en',wiki:w?.content_urls?.desktop?.page||'',date:ol.first_publish_date||d.year||'',saga,similar};
+  if(!d.langs&&d.key)try{const r=(await olq(`q=${encodeURIComponent('key:'+d.key)}`,1))[0];if(r)d.langs=r.langs}catch{}
+  let summary=short(w?.extract||txt(ol.description),900),sumLang=w?(w.lang||'es'):'en',auto=false,gb=null;
+  if(!w||sumLang!=='es'){try{gb=await gbES(d.title,d.author)}catch{}
+    if(gb){summary=short(gb.desc,900);sumLang='es'}
+    else if(summary)try{summary=short(await toES(summary),960);sumLang='es';auto=true}catch{}}
+  const hasES=(d.langs||[]).includes('spa')||!!gb||(w&&w.lang==='es');
+  const onlyEN=!hasES&&(d.langs||[]).length?((d.langs||[]).includes('eng')?'en':'otro'):'';
+  return {d,summary,sumLang,auto,onlyEN,wiki:w?.content_urls?.desktop?.page||'',date:ol.first_publish_date||d.year||'',saga,similar};
 }
 /* Libros del autor que aún no tienes, ordenados según tus gustos:
    géneros que más lees y valoras + temas de los libros de este autor que te han gustado + popularidad */
@@ -508,7 +548,7 @@ function viewAuthor(){
     <div class="sub">${esc([a.desc,dates].filter(Boolean).join(' · '))}</div>
     <div class="acts2">${readN?`<button class="btn primary" data-act="authorBooks" data-k="${esc(norm(name))}" data-s="read">📚 Ver mis ${pl(readN,'libro leído','libros leídos')}</button>`:mine.length?`<button class="btn primary" data-act="authorBooks" data-k="${esc(norm(name))}" data-s="all">📚 Ver sus ${pl(mine.length,'libro')} en mi biblioteca</button>`:''}
       <button class="btn ${fav?'':'ghost'}" data-act="fav" data-k="${esc(norm(name))}">${fav?'♥ Favorito':'♡ Marcar como favorito'}</button></div></div></div>
-  <p class="bio">${c.s==='loading'?'<span class="skel">Buscando su biografía…</span>':a.bio?esc(a.bio)+(a.bioLang!=='es'?' <span class="muted">(en inglés)</span>':'')+(safeUrl(a.wiki)?` <a href="${esc(safeUrl(a.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):'<span class="muted">No se ha encontrado una biografía.</span>'}</p>
+  <p class="bio">${c.s==='loading'?'<span class="skel">Buscando su biografía…</span>':a.bio?esc(a.bio)+(a.bioLang!=='es'?' <span class="muted">(en inglés)</span>':a.auto?' <span class="muted">(traducido automáticamente)</span>':'')+(safeUrl(a.wiki)?` <a href="${esc(safeUrl(a.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):'<span class="muted">No se ha encontrado una biografía.</span>'}</p>
   ${mine.length?`<div class="sec"><div class="sech"><h2>${readN?'Los que has leído':'En tu biblioteca'}</h2></div><div class="hrow">${[...mine].sort((x,y)=>(x.status==='read'?0:1)-(y.status==='read'?0:1)||(y.end||'').localeCompare(x.end||'')).map((b,i)=>tile(b,i)).join('')}</div></div>`:''}
   <div class="sec"><div class="sech"><h2>Sus libros más conocidos</h2></div>${works}</div>
   ${(()=>{if(c.s!=='ok')return '';const p=authorPicks(a);if(!p.list.length)return '';
@@ -523,9 +563,9 @@ function viewWork(){
   return `<button class="back" data-act="back">← Volver</button>
   <div class="bk wk">${cover(d)}<div class="main">
     <h2>${esc(d.title)}</h2><div class="au">${d.author?`<a data-act="openAuthor" data-n="${esc(d.author)}" data-k="${esc(d.akey||'')}">${esc(d.author)}</a>`:'Autor desconocido'}</div>
-    <div class="pills">${date?`<span class="pill">📅 ${esc(date)}</span>`:''}${d.pages?`<span class="pill">${d.pages} págs.</span>`:''}${d.genre?`<span class="pill">${esc(d.genre)}</span>`:''}${own?'<span class="pill st">En tu biblioteca</span>':''}</div>
+    <div class="pills">${date?`<span class="pill">📅 ${esc(date)}</span>`:''}${d.pages?`<span class="pill">${d.pages} págs.</span>`:''}${d.genre?`<span class="pill">${esc(d.genre)}</span>`:''}${own?'<span class="pill st">En tu biblioteca</span>':''}${w.onlyEN==='en'?'<span class="pill lang">🇬🇧 Solo en inglés</span>':w.onlyEN?'<span class="pill lang">Sin edición en español</span>':''}</div>
     <div class="acts">${own?`<button class="btn small primary" data-open="${own.id}">Abrir mi ficha</button>`:`<button class="btn small primary" data-act="addW" data-w="${id}" data-s="want">＋ Quiero leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="reading">Empezar a leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="read">Ya lo he leído</button>`}${cloud.user&&own?`<button class="btn small" data-act="suggestOwn" data-id="${own.id}">🎁 Sugerir a un amigo</button>`:''}</div>
-    <h4>Resumen</h4><p class="bio" style="margin:0">${c.s==='loading'?'<span class="skel">Buscando información del libro…</span>':w.summary?esc(w.summary)+(w.sumLang!=='es'?' <span class="muted">(en inglés)</span>':'')+(safeUrl(w.wiki)?` <a href="${esc(safeUrl(w.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):'<span class="muted">No se ha encontrado un resumen de este libro.</span>'}</p>
+    <h4>Resumen</h4><p class="bio" style="margin:0">${c.s==='loading'?'<span class="skel">Buscando información del libro…</span>':w.summary?esc(w.summary)+(w.sumLang!=='es'?' <span class="muted">(en inglés)</span>':w.auto?' <span class="muted">(traducido automáticamente)</span>':'')+(safeUrl(w.wiki)?` <a href="${esc(safeUrl(w.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):'<span class="muted">No se ha encontrado un resumen de este libro.</span>'}</p>
     ${d.author?`<h4>Autor</h4><div style="max-width:520px">${authorCard({name:d.author,key:d.akey||''})}</div>`:''}
   </div></div>${bottom}`;
 }
@@ -825,11 +865,11 @@ async function socAction(act,a){
 
 /* ---------- Sugerencias ---------- */
 async function olq(params,n){
-  const base=`https://openlibrary.org/search.json?${params}&limit=${n}&fields=key,title,author_name,author_key,cover_i,subject,number_of_pages_median,first_publish_year`;
+  const base=`https://openlibrary.org/search.json?${params}&limit=${n}&fields=key,title,author_name,author_key,cover_i,subject,number_of_pages_median,first_publish_year,language`;
   let r=await fetch(base);
   if(!r.ok&&/&sort=/.test(base)) r=await fetch(base.replace(/&sort=[^&]*/,''));
   if(!r.ok) throw new Error(r.status);
-  return ((await r.json()).docs||[]).map(d=>({key:d.key||'',akey:(d.author_key||[])[0]||'',subjects:(d.subject||[]).slice(0,20),title:d.title,author:(d.author_name||[])[0]||'',year:d.first_publish_year||'',pages:d.number_of_pages_median||'',cover:d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`:'',genre:genreOf(d.subject)}));
+  return ((await r.json()).docs||[]).map(d=>({key:d.key||'',akey:(d.author_key||[])[0]||'',subjects:(d.subject||[]).slice(0,20),title:d.title,author:(d.author_name||[])[0]||'',year:d.first_publish_year||'',pages:d.number_of_pages_median||'',langs:(d.language||[]).filter(x=>/^[a-z]{3}$/.test(x)).slice(0,40),cover:d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`:'',genre:genreOf(d.subject)}));
 }
 const lookup=(title,author,n)=>{const e=encodeURIComponent;return olq(author?`title=${e(title)}&author=${e(author)}`:`q=${e(title)}`,n)};
 function genreOf(subs){ if(!subs) return ''; const s=subs.slice(0,40).map(norm); for(const [k,g] of GMAP) if(s.some(x=>x===k||x.startsWith(k+' ')||x.endsWith(' '+k))) return g; for(const [k,g] of GMAP) if(s.some(x=>x.includes(k))) return g; return '' }

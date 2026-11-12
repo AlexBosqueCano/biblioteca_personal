@@ -1,0 +1,15 @@
+{
+  // Configuración de Cloudflare para Mi biblioteca (se aplica sola al publicar desde GitHub)
+  "name": "biblioteca-personal",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS",
+    // Solo las rutas /api/* pasan por worker.js; el resto se sirve como archivos estáticos
+    "run_worker_first": ["/api/*"]
+  },
+  // Workers AI: traductor para descripciones y biografías que solo existen en inglés
+  "ai": { "binding": "AI" },
+  "observability": { "enabled": true }
+}
