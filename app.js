@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='36';let swReg=null,checking=false;
+const APP_VERSION='37';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -264,7 +264,7 @@ function goalCard(edit){
     <p class="goalbig">${g?`<b>${n}</b> de ${g} libros`:`<b>${n}</b> ${n===1?'libro leído':'libros leídos'}`}</p>
     <span class="muted" style="font-size:14px">${msg}</span><div><a class="goallink" data-nav="profile">${g?'Cambiar objetivo':'Ponerme un reto'} →</a></div></div></div>`;
   return `<div class="card goalc">${ring}<div style="flex:1"><h3>Reto ${yr}</h3><p class="muted" style="margin:4px 0 12px;font-size:14px">${n} ${n===1?'libro leído':'libros leídos'} este año · ${msg}</p>
-    <div class="stepper"><button data-act="goalStep" data-d="-1" aria-label="Uno menos" ${g<=0?'disabled':''}>−</button><span class="sv">${g||'—'}</span><button data-act="goalStep" data-d="1" aria-label="Uno más">+</button><span class="muted" style="font-size:14px">libros</span></div>
+    <div class="stepper"><button data-act="goalStep" data-d="-1" aria-label="Uno menos" ${g<=0?'disabled':''}>−</button><input class="sv" id="goalIn" type="number" inputmode="numeric" min="0" max="999" step="1" value="${g||''}" placeholder="—" aria-label="Número de libros del reto" title="Escribe tu objetivo"><button data-act="goalStep" data-d="1" aria-label="Uno más">+</button><span class="muted" style="font-size:14px">libros</span></div>
     <div class="presets">${[6,12,24,36,52].map(v=>`<button class="chip ${g===v?'on':''}" data-act="goalSet" data-v="${v}">${v}</button>`).join('')}${g?'<button class="chip dash" data-act="goalSet" data-v="0">Quitar reto</button>':''}</div></div></div>`;
 }
 function readingCard(b){
@@ -1084,6 +1084,7 @@ $('#q').addEventListener('input',e=>{q=e.target.value;
   if(route.v==='profile'){route={v:'lib'};status='all'}
   render();showQS()});
 $('#q').addEventListener('keydown',e=>{if(e.key==='Enter'&&route.v==='search')recSearch()});
+document.addEventListener('keydown',e=>{if(e.target.id==='goalIn'&&e.key==='Enter'){e.preventDefault();e.target.blur()}});
 $('#q').addEventListener('blur',()=>{if(route.v==='search'&&cat.state==='done')recSearch();setTimeout(()=>$('#qs').hidden=true,200)});
 $('#q').addEventListener('focus',showQS);
 function clearQ(){q='';$('#q').value='';$('#qs').hidden=true}
@@ -1189,8 +1190,8 @@ document.addEventListener('change',e=>{
   else if(t.dataset.sf){SF[t.dataset.sf]=t.value;render()}
   else if(t.id==='sort'){sort=t.value;render()}
   else if(t.id==='statYear'){statYear=t.value;render()}
-  else if(t.id==='goalIn'){cfg.goals[curYear()]=Math.max(0,parseInt(t.value)||0);save();render()}
   else if(t.id==='consentChk'){setConsent(t.checked?'yes':'no')}
+  else if(t.id==='goalIn'){const y=curYear(),v=Math.max(0,Math.min(999,Math.round(+t.value||0)));if(v!==(+cfg.goals[y]||0)){cfg.goals[y]=v;save();toast(v?`Reto ${y}: ${v} libros`:'Reto quitado')}render()}
   else if(t.id==='shareChk'){cfg.shareProg=t.checked;save();toast(t.checked?'Tus amigos verán cómo vas con los libros que te recomienden':'Ya no se compartirá cómo vas con los libros recomendados')}
   else if(t.id==='pName'){cfg.name=t.value.trim();save();render()}
   else if(t.dataset.cur){const b=get(t.dataset.cur);if(b){b.current=Math.max(0,parseInt(t.value)||0);if(b.pages&&b.current>b.pages)b.current=b.pages;save();render();if($('#dlgBook').open)renderBook()}}
