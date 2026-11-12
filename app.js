@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='41';let swReg=null,checking=false;
+const APP_VERSION='42';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -484,7 +484,7 @@ function authorAllSec(name,a){
       ${loading?'<div class="dashed" style="margin-top:20px">Cargando más libros…</div>':''}
       ${err?'<div class="dashed" style="margin-top:20px">No se ha podido cargar la lista completa. <button class="lnk" data-act="authorAllRetry">↻ Reintentar</button></div>':''}
       ${more?`<div style="text-align:center;margin-top:24px"><button class="btn" data-act="authorMore">Cargar más (${pl(Math.min(AUTH_PAGE,last.d.total-pages*AUTH_PAGE),'libro')})</button></div>`:''}
-      ${capped?`<p class="muted" style="text-align:center;margin-top:24px;font-size:14px">Se muestran sus ${AUTH_MAX} libros más leídos de ${last.d.total}. Si buscas uno concreto, escribe el título en el buscador de arriba.</p>`:''}`;
+      ${capped?`<p class="muted" style="text-align:center;margin-top:24px;font-size:14px">Se muestran sus ${list.length} libros más leídos de ${last.d.total}. Si buscas uno concreto, escribe el título en el buscador de arriba.</p>`:''}`;
   return `<div class="sec" id="authAll"><div class="sech" style="flex-wrap:wrap"><h2>Todos sus libros${list.length?` <span class="muted" style="font-size:15px;font-weight:400">· ${list.length}</span>`:''}</h2>
     <div class="seg" style="margin-left:auto">${[['pop','Más leídos'],['new','Más recientes'],['old','Más antiguos']].map(([k,l])=>`<button class="${sort===k?'on':''}" data-act="authorSort" data-s="${k}">${l}</button>`).join('')}</div>
     <button class="lnk" style="margin:0" data-act="authorAllHide">Ocultar</button></div>${body}</div>`;
