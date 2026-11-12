@@ -14,3 +14,12 @@ r=await w.fetch(new Request('https://biblioteca-personal.alexbosquecano.workers.
 r=await w.fetch(new Request('https://biblioteca-personal.alexbosquecano.workers.dev/index.html'),env,ctx);console.log('estático',await r.text());
 env.AI.run=async m=>{if(m.includes('llama'))throw new Error('caído');return {translated_text:'Una novela.'}};
 r=await w.fetch(post({text:'A novel. About magic.'}),env,ctx);console.log('respaldo m2m100',r.status,await r.text());
+// /api/libro: Google Books con caché
+let gbCalls=0;
+globalThis.fetch=async u=>{gbCalls++;const es=String(u).includes('langRestrict=es');return new Response(JSON.stringify({items:es?[]:[{volumeInfo:{title:'Bedlam',authors:['Derek Landy'],language:'en',description:'<b>Skulduggery</b> and Valkyrie face the end of the world in this thrilling eleventh adventure full of magic and danger.'}}]}),{status:200})};
+const lib=t=>new Request('https://biblioteca-personal.alexbosquecano.workers.dev/api/libro?t='+encodeURIComponent(t)+'&a=Derek%20Landy');
+r=await w.fetch(lib('Bedlam'),env,ctx);console.log('libro 1ª',r.status,r.headers.get('X-Cache'),(await r.text()).slice(0,90));
+await new Promise(s=>setTimeout(s,10));
+r=await w.fetch(lib('Bedlam'),env,ctx);console.log('libro 2ª (caché)',r.headers.get('X-Cache'),'consultas a Google:',gbCalls);
+globalThis.fetch=async()=>new Response('{}',{status:429});
+r=await w.fetch(lib('Otro'),env,ctx);console.log('Google saturado',r.status);

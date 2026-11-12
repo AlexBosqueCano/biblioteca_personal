@@ -77,10 +77,56 @@ async function traducir(request, env, ctx) {
   return json({ es }, 200, { 'X-Cache': 'MISS' });
 }
 
+/* /api/libro?t=título&a=autor: descripción del libro en Google Books (primero edición en español, si no en inglés).
+   Se guarda 30 días en la caché de Cloudflare para no repetir consultas (Google limita mucho las anónimas).
+   Si existe el secreto GOOGLE_BOOKS_KEY (Cloudflare → Worker → Settings → Variables and Secrets) se usa la clave propia. */
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+const STOP = new Set(['the', 'and', 'los', 'las', 'del', 'una', 'para', 'with', 'from', 'that', 'este', 'esta', 'book', 'libro']);
+function elige(items, title, author, lang) {
+  const last = norm(author).split(' ').pop(), tw = norm(title).split(' ').filter(w => w.length > 3 && !STOP.has(w));
+  for (const it of items || []) {
+    const v = it.volumeInfo || {};
+    if (lang && v.language !== lang) continue;
+    const d = String(v.description || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (d.length < 80) continue;
+    if (last && !norm((v.authors || []).join(' ')).includes(last)) continue;
+    const vt = norm(v.title + ' ' + (v.subtitle || ''));
+    if (tw.length && !tw.some(w => vt.includes(w))) continue;
+    return { title: String(v.title || '').slice(0, 200), desc: d.slice(0, 3000), lang: v.language || '' };
+  }
+  return null;
+}
+async function libro(request, env, ctx) {
+  const url = new URL(request.url);
+  const t = (url.searchParams.get('t') || '').slice(0, 200).trim(), a = (url.searchParams.get('a') || '').slice(0, 120).trim();
+  if (!t) return json({ error: 'Falta el título' }, 400);
+  const key = new Request(`${url.origin}/__cache/libro/${await sha('v1|' + norm(t) + '|' + norm(a))}`);
+  const hit = await caches.default.match(key);
+  if (hit) return new Response(hit.body, { headers: { ...SEC, 'X-Cache': 'HIT' } });
+  const gb = async extra => {
+    const q = encodeURIComponent(`intitle:${t}` + (a ? ` inauthor:${a}` : ''));
+    const k = env.GOOGLE_BOOKS_KEY ? `&key=${env.GOOGLE_BOOKS_KEY}` : '';
+    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}${extra}&printType=books&maxResults=10&fields=items(volumeInfo(title,subtitle,authors,description,language))${k}`);
+    if (!r.ok) throw new Error('gb ' + r.status);
+    return (await r.json()).items || [];
+  };
+  try {
+    const es = elige(await gb('&langRestrict=es'), t, a, 'es');
+    const any = es ? null : elige(await gb(''), t, a, '');
+    const out = { es, otro: any };
+    const res = json(out, 200, { 'Cache-Control': `public, max-age=${es || any ? 2592000 : 86400}` });
+    ctx.waitUntil(caches.default.put(key, res.clone()));
+    return json(out, 200, { 'X-Cache': 'MISS' });
+  } catch (e) {
+    return json({ error: 'Google Books no responde', detalle: String(e.message || e).slice(0, 40) }, 503);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
     if (pathname === '/api/traducir') return traducir(request, env, ctx);
+    if (pathname === '/api/libro') return libro(request, env, ctx);
     if (pathname.startsWith('/api/')) return json({ error: 'No existe' }, 404);
     return env.ASSETS.fetch(request);
   },

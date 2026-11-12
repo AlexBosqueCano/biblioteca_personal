@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='37';let swReg=null,checking=false;
+const APP_VERSION='38';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -435,17 +435,11 @@ async function toES(text){
 /* ¿Es una descripción de verdad o solo una lista de títulos? (al menos 12 palabras y frases de 5+ palabras de media) */
 function realText(t){const w=String(t||'').split(/\s+/).filter(Boolean),f=String(t||'').split(/[.!?]+/).filter(x=>x.trim());return w.length>=12&&w.length/Math.max(1,f.length)>=5}
 const STOPW=new Set(['the','and','los','las','del','una','para','with','from','that','este','esta']);
-async function gbES(title,author){ // descripción escrita en español (ediciones españolas en Google Books)
-  const q=encodeURIComponent(`${title} ${author||''}`.trim());
-  const r=await getJSON(`https://www.googleapis.com/books/v1/volumes?q=${q}&langRestrict=es&printType=books&maxResults=8&fields=items(volumeInfo(title,authors,description,language))`);
-  const last=norm(author||'').split(' ').pop(),tw=norm(title).split(' ').filter(w=>w.length>3&&!STOPW.has(w));
-  for(const it of r.items||[]){const v=it.volumeInfo||{};
-    if(v.language!=='es'||!v.description||v.description.length<80)continue;
-    if(last&&!norm((v.authors||[]).join(' ')).includes(last))continue;
-    const vt=norm(v.title||'');if(tw.length&&!tw.some(w=>vt.includes(w)))continue;
-    return {desc:txt(v.description),title:v.title||''};
-  }
-  return null;
+async function gbInfo(title,author){ // Google Books a través de la propia web (con caché de 30 días en Cloudflare)
+  const r=await fetch(`/api/libro?t=${encodeURIComponent(String(title).replace(/\s*[\(\[].*$/,'').replace(/\s*\/.*$/,'').slice(0,200))}&a=${encodeURIComponent(author||'')}`);
+  if(!r.ok) throw new Error('libro '+r.status);
+  const j=await r.json(),c=x=>x&&x.desc?{desc:txt(String(x.desc)),title:String(x.title||''),lang:String(x.lang||'')}:null;
+  return {es:c(j.es),otro:c(j.otro)};
 }
 async function authorInfo(name,key){
   if(!key){try{const r=await getJSON(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(name)}&limit=6`);const nn=norm(name),docs=r.docs||[];
@@ -512,13 +506,16 @@ async function workInfo(it){
   if(!saga) similar=await similarTo(d,ol);
   if(!d.langs&&d.key)try{const r=(await olq(`q=${encodeURIComponent('key:'+d.key)}`,1))[0];if(r)d.langs=r.langs}catch{}
   let summary=short(w?.extract||txt(ol.description),900),sumLang=w?(w.lang||'es'):'en',auto=false,gb=null;
-  if(!w||sumLang!=='es'){try{gb=await gbES(d.title,d.author)}catch{}
+  let failed=false;
+  if(!w||sumLang!=='es'){let g=null;try{g=await gbInfo(d.title,d.author)}catch{failed=true}
+    gb=g&&g.es;
     if(gb){summary=short(gb.desc,900);sumLang='es'}
-    else if(summary&&!realText(summary)) summary='';
-    else if(summary)try{summary=short(await toES(summary),960);sumLang='es';auto=true}catch{}}
+    else{ if(!realText(summary)&&g&&g.otro&&realText(g.otro.desc)) summary=short(g.otro.desc,900);
+      if(summary&&!realText(summary)) summary='';
+      else if(summary)try{summary=short(await toES(summary),960);sumLang='es';auto=true}catch{} }}
   const hasES=(d.langs||[]).includes('spa')||!!gb||(w&&w.lang==='es');
   const onlyEN=!hasES&&(d.langs||[]).length?((d.langs||[]).includes('eng')?'en':'otro'):'';
-  return {d,summary,sumLang,auto,onlyEN,wiki:w?.content_urls?.desktop?.page||'',date:ol.first_publish_date||d.year||'',saga,similar};
+  return {d,summary,sumLang,auto,onlyEN,failed,wiki:w?.content_urls?.desktop?.page||'',date:ol.first_publish_date||d.year||'',saga,similar};
 }
 /* Libros del autor que aún no tienes, ordenados según tus gustos:
    géneros que más lees y valoras + temas de los libros de este autor que te han gustado + popularidad */
@@ -573,7 +570,7 @@ function viewWork(){
     <h2>${esc(d.title)}</h2><div class="au">${d.author?`<a data-act="openAuthor" data-n="${esc(d.author)}" data-k="${esc(d.akey||'')}">${esc(d.author)}</a>`:'Autor desconocido'}</div>
     <div class="pills">${date?`<span class="pill">📅 ${esc(date)}</span>`:''}${d.pages?`<span class="pill">${d.pages} págs.</span>`:''}${d.genre?`<span class="pill">${esc(d.genre)}</span>`:''}${own?'<span class="pill st">En tu biblioteca</span>':''}${w.onlyEN==='en'?'<span class="pill lang">🇬🇧 Solo en inglés</span>':w.onlyEN?'<span class="pill lang">Sin edición en español</span>':''}</div>
     <div class="acts">${own?`<button class="btn small primary" data-open="${own.id}">Abrir mi ficha</button>`:`<button class="btn small primary" data-act="addW" data-w="${id}" data-s="want">＋ Quiero leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="reading">Empezar a leerlo</button><button class="btn small" data-act="addW" data-w="${id}" data-s="read">Ya lo he leído</button>`}${cloud.user&&own?`<button class="btn small" data-act="suggestOwn" data-id="${own.id}">🎁 Sugerir a un amigo</button>`:''}</div>
-    <h4>Resumen</h4><p class="bio" style="margin:0">${c.s==='loading'?'<span class="skel">Buscando información del libro…</span>':w.summary?esc(w.summary)+(w.sumLang!=='es'?' <span class="muted">(en inglés)</span>':w.auto?' <span class="muted">(traducido automáticamente)</span>':'')+(safeUrl(w.wiki)?` <a href="${esc(safeUrl(w.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):'<span class="muted">No se ha encontrado un resumen de este libro.</span>'}</p>
+    <h4>Resumen</h4><p class="bio" style="margin:0">${c.s==='loading'?'<span class="skel">Buscando información del libro…</span>':w.summary?esc(w.summary)+(w.sumLang!=='es'?' <span class="muted">(en inglés)</span>':w.auto?' <span class="muted">(traducido automáticamente)</span>':'')+(safeUrl(w.wiki)?` <a href="${esc(safeUrl(w.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):''+(w.failed?'<span class="muted">No se ha podido consultar Google Books ahora mismo.</span> <button class="lnk" data-act="retryWork">↻ Reintentar</button>':'<span class="muted">No se ha encontrado un resumen de este libro.</span>')}</p>
     ${d.author?`<h4>Autor</h4><div style="max-width:520px">${authorCard({name:d.author,key:d.akey||''})}</div>`:''}
   </div></div>${bottom}`;
 }
@@ -1108,6 +1105,7 @@ document.addEventListener('click',e=>{
     else if(act==='suggestCur'){const b=get(current);if(b){$('#dlgBook').close();openSuggest(b)}}
     else if(act==='suggestOwn'){const b=get(a.dataset.id);if(b)openSuggest(b)}
     else if(act==='sugGo'){$('#dlgSug').close();go('sugs')}
+    else if(act==='retryWork'){const it=route.it||{};delete CACHE['w:'+(it.key||norm(it.title+'|'+it.author))];render()}
     else if(act==='sentGo'){go('sugs','sent')}
     else if(act==='sentSeen'){markSentSeen();render()}
     else if(act==='replyOpen'){const x=soc.sugs.find(y=>y.id===+a.dataset.id);if(x)openReply(x,a.dataset.k==='final'?'final':'first')}
