@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='33';let swReg=null,checking=false;
+const APP_VERSION='34';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -392,7 +392,11 @@ const initials=n=>String(n||'?').trim().split(/\s+/).filter(Boolean).slice(0,2).
 const olAuthorPhoto=k=>`https://covers.openlibrary.org/a/olid/${encodeURIComponent(k)}-M.jpg?default=false`;
 function avatar(name,photo,cls=''){return `<div class="av ${cls}" style="--h:${hash(norm(name))%360}">${esc(initials(name))}${safeImg(photo)?`<img src="${esc(safeImg(photo))}" alt="" loading="lazy" referrerpolicy="no-referrer" data-rm>`:''}</div>`}
 async function getJSON(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()}
-const txt=v=>typeof v==='string'?v:(v&&v.value)||'';
+/* Texto de Open Library sin formato: quita enlaces markdown, direcciones web, separadores y notas de fuente */
+const txt=v=>{let t=typeof v==='string'?v:(v&&v.value)||'';
+  return t.replace(/\[([^\]]*)\]\((?:https?:)?[^)]*\)/g,'$1').replace(/\[\d+\]:\s*\S+/g,'').replace(/\(\s*\[?(source|fuente)[^)]*\)/gi,'')
+    .replace(/https?:\/\/\S+/g,'').replace(/^\s*[-*_=]{3,}\s*$/gm,'').replace(/^\s*(Contains|Includes|Incluye)\s*:?\s*$/gim,'').replace(/^\s*[-*•]\s+/gm,'')
+    .replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim()};
 function dedupe(l){const seen=new Set();return l.filter(d=>{const k=norm(d.title)+'|'+norm(d.author);if(!d.title||seen.has(k))return false;seen.add(k);return true})}
 function short(t,n){t=String(t||'').replace(/\[\d+\]:\s*\S+/g,'').replace(/\[([^\]]+)\]\[\d+\]/g,'$1').replace(/\(\s*\[?source\]?[^)]*\)/gi,'').replace(/-{3,}[\s\S]*$/,'').replace(/\s+/g,' ').trim();
   if(t.length<=n)return t;const c=t.slice(0,n),p=c.lastIndexOf('. ');return p>n*.5?c.slice(0,p+1):c.replace(/\s\S*$/,'')+'…'}
