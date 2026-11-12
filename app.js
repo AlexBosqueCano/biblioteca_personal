@@ -130,7 +130,7 @@ async function xlsxRows(buf){
 }
 /*PURE-END*/
 
-const APP_VERSION='38';let swReg=null,checking=false;
+const APP_VERSION='39';let swReg=null,checking=false;
 const KEY='biblioteca.v1';
 const GENRES=['Novela','Ficción','Fantasía','Ciencia ficción','Misterio','Thriller','Romance','Histórica','Terror','Clásicos','Juvenil','Poesía','Teatro','Cómic','Ensayo','Historia','Biografía','Filosofía','Ciencia','Psicología','Economía','Autoayuda','Tecnología','Viajes'];
 const GMAP=[['science fiction','Ciencia ficción'],['ciencia ficcion','Ciencia ficción'],['fantasy','Fantasía'],['fantasia','Fantasía'],['mystery','Misterio'],['detective','Misterio'],['misterio','Misterio'],['thriller','Thriller'],['suspense','Thriller'],['horror','Terror'],['terror','Terror'],['romance','Romance'],['love stories','Romance'],['historical fiction','Histórica'],['novela historica','Histórica'],['poetry','Poesía'],['poesia','Poesía'],['drama','Teatro'],['comics','Cómic'],['graphic novels','Cómic'],['biography','Biografía'],['biografia','Biografía'],['autobiography','Biografía'],['philosophy','Filosofía'],['filosofia','Filosofía'],['psychology','Psicología'],['self-help','Autoayuda'],['economics','Economía'],['business','Economía'],['computers','Tecnología'],['programming','Tecnología'],['science','Ciencia'],['history','Historia'],['historia','Historia'],['travel','Viajes'],['essays','Ensayo'],['juvenile','Juvenil'],['young adult','Juvenil'],['classic','Clásicos'],['novela','Novela'],['fiction','Ficción'],['ficcion','Ficción']];
@@ -456,8 +456,8 @@ async function authorInfo(name,key){
   if(!w)try{w=await wikiFind(name+' escritor',ok,'es')}catch{}
   /* 3) Si solo aparece en inglés, se salta a su versión en español a través de Wikidata */
   if(!w)try{const en=await wikiFind(name+' writer',ok,'en');if(en){w=(en.wikibase_item&&await esFromQid(en.wikibase_item).catch(()=>null))||en}}catch{}
-  let all=[];
-  try{all=dedupe(await olq(key?`author_key=${encodeURIComponent(key)}&sort=already_read`:`author=${encodeURIComponent(name)}&sort=already_read`,40))}catch{}
+  let all=[],total=0;
+  try{const r=await olq(authorQ(name,key),40);total=r.total;all=dedupe(r)}catch{}
   const works=all.slice(0,10);
   const ph=(ol.photos||[]).find(x=>x>0);
   let bio=short(w?.extract||txt(ol.bio),520),bioLang=w?(w.lang||'es'):'en',desc=w?.description||'',auto=false;
@@ -465,7 +465,27 @@ async function authorInfo(name,key){
   else if(bio&&bioLang!=='es')try{bio=short(await toES(bio),560);bioLang='es';auto=true}catch{}
   if(desc&&w&&w.lang&&w.lang!=='es')try{desc=await toES(desc)}catch{}
   return {name,key,desc,bio,bioLang,auto,wiki:w?.content_urls?.desktop?.page||'',
-    photo:w?.thumbnail?.source||(ph?`https://covers.openlibrary.org/a/id/${ph}-L.jpg`:(key?olAuthorPhoto(key):'')),birth:ol.birth_date||'',death:ol.death_date||'',works,all};
+    photo:w?.thumbnail?.source||(ph?`https://covers.openlibrary.org/a/id/${ph}-L.jpg`:(key?olAuthorPhoto(key):'')),birth:ol.birth_date||'',death:ol.death_date||'',works,all,total};
+}
+/* Bibliografía completa: solo se pide si el usuario pulsa «Ver todos sus libros», de 100 en 100 */
+const authorQ=(name,key)=>key?`author_key=${encodeURIComponent(key)}&sort=already_read`:`author=${encodeURIComponent(name)}&sort=already_read`;
+const AUTH_PAGE=100;
+async function authorAllPage(name,key,page){const r=await olq(authorQ(name,key)+'&page='+page,AUTH_PAGE);return {items:r,raw:r.length,total:r.total}}
+function authorAllSec(name,a){
+  const id=a.key||norm(name),pages=route.pages||1,sort=route.asort||'pop',ck=p=>'aa:'+id+'|'+p;
+  const res=[];for(let p=1;p<=pages;p++)res.push(cached(ck(p),()=>authorAllPage(name,a.key,p)));
+  const okP=res.filter(r=>r.s==='ok'),loading=res.some(r=>r.s==='loading'),err=res.some(r=>r.s==='err');
+  let list=dedupe(okP.flatMap(r=>r.d.items));
+  if(sort!=='pop'){const y=x=>parseInt(x.year)||0;list=[...list].sort((p,q)=>sort==='new'?y(q)-y(p):(y(p)||9999)-(y(q)||9999))}
+  const last=okP[okP.length-1],more=!loading&&!err&&last&&last.d.raw===AUTH_PAGE&&pages*AUTH_PAGE<(last.d.total||0);
+  const body=!okP.length&&loading?'<div class="dashed">Cargando toda su bibliografía…</div>'
+    :`${list.length?`<div class="grid">${list.map((it,i)=>catTile(it,i)).join('')}</div>`:''}
+      ${loading?'<div class="dashed" style="margin-top:20px">Cargando más libros…</div>':''}
+      ${err?'<div class="dashed" style="margin-top:20px">No se ha podido cargar la lista completa. <button class="lnk" data-act="authorAllRetry">↻ Reintentar</button></div>':''}
+      ${more?`<div style="text-align:center;margin-top:24px"><button class="btn" data-act="authorMore">Cargar más (${pl(Math.min(AUTH_PAGE,last.d.total-pages*AUTH_PAGE),'libro')})</button></div>`:''}`;
+  return `<div class="sec" id="authAll"><div class="sech" style="flex-wrap:wrap"><h2>Todos sus libros${list.length?` <span class="muted" style="font-size:15px;font-weight:400">· ${list.length}</span>`:''}</h2>
+    <div class="seg" style="margin-left:auto">${[['pop','Más leídos'],['new','Más recientes'],['old','Más antiguos']].map(([k,l])=>`<button class="${sort===k?'on':''}" data-act="authorSort" data-s="${k}">${l}</button>`).join('')}</div>
+    <button class="lnk" style="margin:0" data-act="authorAllHide">Ocultar</button></div>${body}</div>`;
 }
 async function sagaOf(qid,author){
   const c=await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${qid}&property=P179&format=json&origin=*`);
@@ -555,7 +575,9 @@ function viewAuthor(){
       <button class="btn ${fav?'':'ghost'}" data-act="fav" data-k="${esc(norm(name))}">${fav?'♥ Favorito':'♡ Marcar como favorito'}</button></div></div></div>
   <p class="bio">${c.s==='loading'?'<span class="skel">Buscando su biografía…</span>':a.bio?esc(a.bio)+(a.bioLang!=='es'?' <span class="muted">(en inglés)</span>':a.auto?' <span class="muted">(traducido automáticamente)</span>':'')+(safeUrl(a.wiki)?` <a href="${esc(safeUrl(a.wiki))}" target="_blank" rel="noopener noreferrer">Leer más</a>`:''):'<span class="muted">No se ha encontrado una biografía.</span>'}</p>
   ${mine.length?`<div class="sec"><div class="sech"><h2>${readN?'Los que has leído':'En tu biblioteca'}</h2></div><div class="hrow">${[...mine].sort((x,y)=>(x.status==='read'?0:1)-(y.status==='read'?0:1)||(y.end||'').localeCompare(x.end||'')).map((b,i)=>tile(b,i)).join('')}</div></div>`:''}
-  <div class="sec"><div class="sech"><h2>Sus libros más conocidos</h2></div>${works}</div>
+  <div class="sec"><div class="sech"><h2>Sus libros más conocidos</h2></div>${works}
+    ${c.s==='ok'&&!route.all&&(a.total||0)>(a.works||[]).length?`<div style="margin-top:18px"><button class="btn" data-act="authorAll">📖 Ver todos sus libros <span class="muted">(${a.total} en el catálogo)</span></button></div>`:''}</div>
+  ${c.s==='ok'&&route.all?authorAllSec(name,a):''}
   ${(()=>{if(c.s!=='ok')return '';const p=authorPicks(a);if(!p.list.length)return '';
     return `<div class="sec"><div class="sech"><h2>Te pueden gustar</h2></div><p class="muted" style="margin:-6px 0 12px;font-size:14px">${mine.length?'Elegidos a partir de lo que has leído de '+esc(name):'Libros suyos que aún no tienes'}${p.why.length?' y de tus géneros favoritos ('+esc(p.why.join(', '))+')':''}.</p><div class="hrow">${p.list.map((it,i)=>catTile(it,i)).join('')}</div></div>`})()}`;
 }
@@ -874,7 +896,8 @@ async function olq(params,n){
   let r=await fetch(base);
   if(!r.ok&&/&sort=/.test(base)) r=await fetch(base.replace(/&sort=[^&]*/,''));
   if(!r.ok) throw new Error(r.status);
-  return ((await r.json()).docs||[]).map(d=>({key:d.key||'',akey:(d.author_key||[])[0]||'',subjects:(d.subject||[]).slice(0,20),title:d.title,author:(d.author_name||[])[0]||'',year:d.first_publish_year||'',pages:d.number_of_pages_median||'',langs:(d.language||[]).filter(x=>/^[a-z]{3}$/.test(x)).slice(0,40),cover:d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`:'',genre:genreOf(d.subject)}));
+  const j=await r.json(),out=(j.docs||[]).map(d=>({key:d.key||'',akey:(d.author_key||[])[0]||'',subjects:(d.subject||[]).slice(0,20),title:d.title,author:(d.author_name||[])[0]||'',year:d.first_publish_year||'',pages:d.number_of_pages_median||'',langs:(d.language||[]).filter(x=>/^[a-z]{3}$/.test(x)).slice(0,40),cover:d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`:'',genre:genreOf(d.subject)}));
+  out.total=j.numFound||0; return out;
 }
 const lookup=(title,author,n)=>{const e=encodeURIComponent;return olq(author?`title=${e(title)}&author=${e(author)}`:`q=${e(title)}`,n)};
 function genreOf(subs){ if(!subs) return ''; const s=subs.slice(0,40).map(norm); for(const [k,g] of GMAP) if(s.some(x=>x===k||x.startsWith(k+' ')||x.endsWith(' '+k))) return g; for(const [k,g] of GMAP) if(s.some(x=>x.includes(k))) return g; return '' }
@@ -1105,6 +1128,11 @@ document.addEventListener('click',e=>{
     else if(act==='suggestCur'){const b=get(current);if(b){$('#dlgBook').close();openSuggest(b)}}
     else if(act==='suggestOwn'){const b=get(a.dataset.id);if(b)openSuggest(b)}
     else if(act==='sugGo'){$('#dlgSug').close();go('sugs')}
+    else if(act==='authorAll'){route.all=true;route.pages=1;track('autor_todos');render();setTimeout(()=>$('#authAll')?.scrollIntoView({behavior:'smooth',block:'start'}),60)}
+    else if(act==='authorMore'){route.pages=(route.pages||1)+1;render()}
+    else if(act==='authorSort'){route.asort=a.dataset.s;render()}
+    else if(act==='authorAllHide'){route.all=false;render()}
+    else if(act==='authorAllRetry'){for(const k in CACHE)if(k.startsWith('aa:')&&CACHE[k].s==='err')delete CACHE[k];render()}
     else if(act==='retryWork'){const it=route.it||{};delete CACHE['w:'+(it.key||norm(it.title+'|'+it.author))];render()}
     else if(act==='sentGo'){go('sugs','sent')}
     else if(act==='sentSeen'){markSentSeen();render()}
